@@ -17,6 +17,7 @@ import { TodoList } from "./todo-list";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { SignOutButton } from "@/components/client";
+import { DarkModeToggle } from "@/components/dark-mode-toggle";
 
 const Header = () => {
   const router = useRouter();

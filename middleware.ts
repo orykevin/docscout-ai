@@ -41,7 +41,7 @@ export default async function middleware(request: NextRequest) {
 
   if (isSignInRoute || request.nextUrl.pathname === "/") {
     return NextResponse.redirect(
-      new URL("/dashboard/client-only", request.url),
+      new URL("/overview", request.url),
     );
   }
 

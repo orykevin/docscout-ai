@@ -33,7 +33,11 @@ export const UserProfile = ({
 };
 
 export const AppContainer = ({ children }: PropsWithChildren) => {
-  return <div className="min-h-screen w-full p-4 space-y-8">{children}</div>;
+  return (
+    <div className="min-h-screen w-full p-4 space-y-8 bg-background">
+      {children}
+    </div>
+  );
 };
 
 export const AppHeader = ({ children }: PropsWithChildren) => {
