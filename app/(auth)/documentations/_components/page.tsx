@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import {
-  RiAddLine,
   RiDeleteBinLine,
   RiFileCheckLine,
   RiFileCopy2Line,
@@ -97,24 +96,34 @@ const AllDocumentationList = () => {
                       Total all pages : {doc.totalPage}
                     </TooltipContent>
                   </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger className="flex gap-1 items-center">
-                      <RiFileCheckLine className="size-5" />
-                      <p className="text-sm font-semibold">{doc.activePage}</p>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Total scanned pages : {doc.activePage}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger className="flex gap-1 items-center">
-                      <RiFileHistoryLine className="size-5" />
-                      <p className="text-sm font-semibold">{leftPage || "-"}</p>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Total pending pages : {leftPage || "-"}
-                    </TooltipContent>
-                  </Tooltip>
+                  {doc.type === "web" && doc.draft ? (
+                    <Badge variant="outline">Draft</Badge>
+                  ) : (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger className="flex gap-1 items-center">
+                          <RiFileCheckLine className="size-5" />
+                          <p className="text-sm font-semibold">
+                            {doc.activePage}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Total scanned pages : {doc.activePage}
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger className="flex gap-1 items-center">
+                          <RiFileHistoryLine className="size-5" />
+                          <p className="text-sm font-semibold">
+                            {leftPage || "-"}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Total pending pages : {leftPage || "-"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
                 </div>
 
                 <div>

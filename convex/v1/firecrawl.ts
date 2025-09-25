@@ -129,7 +129,8 @@ export const scrapeSiteInfo = action({
                 activePage: 0,
                 totalPage: filteredLinks.length,
                 userId: userId.subject,
-                type: "web"
+                type: "web",
+                draft: true,
             })
 
             await ctx.runMutation(internal.v1.scrapeWeb.saveWebData, {

@@ -14,3 +14,14 @@ export function formatBytes(bytes: number, decimals = 2): string {
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + " " + sizes[i];
 }
+
+export function chunkText(text: string, chunkSize = 1000, overlap = 200) {
+  const words = text.split(" ");
+  const chunks: string[] = [];
+
+  for (let i = 0; i < words.length; i += chunkSize - overlap) {
+    chunks.push(words.slice(i, i + chunkSize).join(" "));
+  }
+
+  return chunks;
+}

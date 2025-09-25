@@ -36,9 +36,6 @@ const DocumentationDetail = ({
     api.v1.documentation.updateDocumentation,
   );
 
-  // const files = useQuery
-  console.log(data);
-
   if (!data) return <div>Loading...</div>;
 
   const createdDate = new Date(data._creationTime);
@@ -120,6 +117,7 @@ const DocumentationDetail = ({
           </div>
           <Badge>{data.type}</Badge>
         </div>
+
         <div className="flex gap-1 text-sm text-muted-foreground">
           <span>Created at {createdDate.toDateString()}</span>
           {updatedDate && (
@@ -137,7 +135,21 @@ const DocumentationDetail = ({
         ) : (
           <>
             <div className="mt-4 mb-2 flex items-center justify-between">
-              <p className="text-base font-semibold">All Pages</p>
+              {data.draft ? (
+                <>
+                  <div>
+                    <p className="text-sm ">Draft</p>
+                    <p className="font-semibold">
+                      {data.activePage} / {data.totalPage} Scanned
+                    </p>
+                  </div>
+                  <Button className="mt-4 mb-4" size="sm">
+                    Upgrade to Pro to process all pages
+                  </Button>{" "}
+                </>
+              ) : (
+                <p className="text-base font-semibold">All Pages</p>
+              )}
             </div>
             <WebDocumentationDetail documentationId={documentationId} />
           </>
