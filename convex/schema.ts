@@ -1,6 +1,6 @@
 import { defineSchema } from "convex/server";
-import { documentationTable, fileDocumentationTable } from "./tables/doumentationTable";
-import { webInfoTable, webLinksTable } from "./tables/webDataTable";
+import { documentationTable, fileDocumentationChunksTable, fileDocumentationTable } from "./tables/doumentationTable";
+import { documentationPageChunksTable, documentationPageTable, webInfoTable, webLinksTable } from "./tables/webDataTable";
 
 // The schema is entirely optional.
 // You can delete this file (schema.ts) and the
@@ -9,6 +9,9 @@ import { webInfoTable, webLinksTable } from "./tables/webDataTable";
 export default defineSchema({
   documentation: documentationTable,
   fileDocumentation: fileDocumentationTable,
+  fileDocumentationChunks: fileDocumentationChunksTable,
   webInfo: webInfoTable,
   webLinks: webLinksTable,
+  pageDocumentation: documentationPageTable,
+  pageDocumentationChunks: documentationPageChunksTable
 });

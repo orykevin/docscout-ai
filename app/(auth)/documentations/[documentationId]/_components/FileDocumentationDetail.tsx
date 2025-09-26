@@ -1,16 +1,21 @@
 import {
+  RiCheckboxCircleFill,
+  RiCloseCircleLine,
   RiCloseLine,
   RiDownload2Line,
   RiFilePdf2Line,
   RiFileTextLine,
   RiFileWordLine,
+  RiHourglass2Line,
   RiMarkdownLine,
   RiMore2Line,
+  RiQrScanFill,
 } from "@remixicon/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import React from "react";
@@ -38,12 +43,20 @@ const FileDocumentationDetail = ({
   const { mutate, isPending } = useConvexMutation(
     api.v1.documentation.deleteFileDocumentation,
   );
+  const { mutate: scanFile, isPending: isScanning } = useConvexMutation(
+    api.v1.documentation.reScanFileDocument,
+  );
 
   const handleDeleteFile = () => {
-    if (isPending || !selectedFiles) return;
+    if (isPending || !selectedFiles || isScanning) return;
     mutate({ documentationId, fileDocumentationId: selectedFiles }).then(() => {
       setSelectedFiles(null);
     });
+  };
+
+  const handleScanFile = (fileDocumentationId: Id<"fileDocumentation">) => {
+    if (isPending || isScanning) return;
+    scanFile({ documentationId, fileDocumentationId });
   };
 
   if (!filesData) return "Loading data...";
@@ -66,7 +79,19 @@ const FileDocumentationDetail = ({
                   <RiFileWordLine size={32} />
                 )}
                 <div className="w-full">
-                  <p>{file.fileName}</p>
+                  <div className="flex items-center gap-1">
+                    {file.status === "starting" ? (
+                      <RiHourglass2Line className="animate-spin" size={16} />
+                    ) : file?.status === "completed" ? (
+                      <RiCheckboxCircleFill size={16} />
+                    ) : (
+                      <RiCloseCircleLine
+                        size={16}
+                        className="text-muted-foreground"
+                      />
+                    )}
+                    <p>{file.fileName}</p>
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {formatBytes(file.fileSize)}
                   </p>
@@ -78,6 +103,11 @@ const FileDocumentationDetail = ({
                     <RiMore2Line />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
+                    <DropdownMenuLabel>
+                      {file.status === "completed"
+                        ? "File is scanned"
+                        : "File is not scanned"}
+                    </DropdownMenuLabel>
                     <DropdownMenuItem>
                       {" "}
                       <RiDownload2Line />
@@ -89,6 +119,14 @@ const FileDocumentationDetail = ({
                       {" "}
                       <RiCloseLine /> Delete
                     </DropdownMenuItem>
+                    {file.status !== "completed" && (
+                      <DropdownMenuItem
+                        onClick={() => handleScanFile(file._id)}
+                      >
+                        {" "}
+                        <RiQrScanFill /> Scan File
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

@@ -29,10 +29,12 @@ export default function AuthLayout({
           </div>
         </header>
         <SettingsPanelProvider>
-          <div className="flex p-3 h-[calc(100svh-4rem)] bg-background text-sidebar-primary-foregroundmd:rounded-s-3xl md:group-peer-data-[state=collapsed]/sidebar-inset:rounded-s-none transition-all ease-in-out duration-300 rounded-xl">
+          <div className="flex p-3 overflow-auto h-screen max-h-[calc(100svh-4rem)] bg-background text-sidebar-primary-foregroundmd:rounded-s-3xl md:group-peer-data-[state=collapsed]/sidebar-inset:rounded-s-none transition-all ease-in-out duration-300 rounded-xl">
             {/* <Chat />
             <SettingsPanel /> */}
-            <div className="max-w-5xl w-full mx-auto ">{children}</div>
+            <div className="max-w-5xl lg:max-w-7xl w-full mx-auto">
+              {children}
+            </div>
           </div>
         </SettingsPanelProvider>
       </SidebarInset>

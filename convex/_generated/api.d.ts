@@ -24,6 +24,8 @@ import type * as http from "../http.js";
 import type * as middleware from "../middleware.js";
 import type * as tables_doumentationTable from "../tables/doumentationTable.js";
 import type * as tables_webDataTable from "../tables/webDataTable.js";
+import type * as utils_lib from "../utils/lib.js";
+import type * as v1_ai from "../v1/ai.js";
 import type * as v1_documentation from "../v1/documentation.js";
 import type * as v1_firecrawl from "../v1/firecrawl.js";
 import type * as v1_scrapeWeb from "../v1/scrapeWeb.js";
@@ -60,6 +62,8 @@ declare const fullApi: ApiFromModules<{
   middleware: typeof middleware;
   "tables/doumentationTable": typeof tables_doumentationTable;
   "tables/webDataTable": typeof tables_webDataTable;
+  "utils/lib": typeof utils_lib;
+  "v1/ai": typeof v1_ai;
   "v1/documentation": typeof v1_documentation;
   "v1/firecrawl": typeof v1_firecrawl;
   "v1/scrapeWeb": typeof v1_scrapeWeb;
