@@ -32,7 +32,7 @@ const AddFileDialog = ({
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     // Do something with the files
-    const allowed = [".pdf", ".md", ".txt", ".doc", ".docx"];
+    const allowed = [".pdf", ".md", ".txt"];
 
     const filtered = acceptedFiles
       .filter((file) =>
@@ -95,6 +95,7 @@ const AddFileDialog = ({
     isDragReject,
   } = useDropzone({
     onDrop,
+    maxSize: 1 * 1024 * 1024,
   });
 
   const handleSaveUploadedFile = () => {
@@ -135,7 +136,7 @@ const AddFileDialog = ({
           >
             <input {...getInputProps()} />
             {isDragReject ? (
-              <p>File type not supported</p>
+              <p>File size should be less than 1MB</p>
             ) : isDragActive ? (
               <p>Drop the files here ...</p>
             ) : (
@@ -145,13 +146,13 @@ const AddFileDialog = ({
                   Drag and drop your file here <br /> or choose a file
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  MD,PDF,TXT,DOC,DOCX up to 5MB
+                  MD,PDF,TXT up to 1MB
                 </p>
                 <Button className="mt-3">Upload</Button>
               </div>
             )}
           </div>
-          <div className="mt-2 h-[calc(100svh-432px)] overflow-auto space-y-2 px-1">
+          <div className="mt-2 h-[calc(90vh-340px)] overflow-auto space-y-2 px-1">
             {files.map((file) => {
               const fileData = file.file;
               const ext = fileData.name.split(".").pop();

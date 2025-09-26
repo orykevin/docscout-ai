@@ -11,7 +11,11 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { Link, Link as LinkType } from "@/convex/v1/firecrawl";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useConvexMutation } from "@/lib/convex-functions";
 import {
+  RiCheckboxCircleFill,
+  RiCircleFill,
+  RiCloseCircleLine,
   RiFilter2Line,
   RiHourglassLine,
   RiMore2Line,
@@ -32,6 +36,16 @@ export const WebDocumentationDetail = ({
   const data = useQuery(api.v1.documentation.getWebInfoData, {
     documentationId,
   });
+  const allPages = useQuery(api.v1.documentation.getAllPageDocumentation, {
+    documentationId,
+  });
+  const { mutate: startScrape, isPending } = useConvexMutation(
+    api.v1.documentation.startScrapeWebData,
+  );
+
+  const handleStartScrape = (url: string, title: string) => {
+    startScrape({ documentationId, pageUrl: url, titleUrl: title });
+  };
 
   useEffect(() => {
     if (debounceText && data?.webLinks.links) {
@@ -84,35 +98,55 @@ export const WebDocumentationDetail = ({
         </div>
       </div>
       <div className="space-y-2">
-        {(searchApplied || links).map((link) => (
-          <div className="bg-card p-3 rounded-md flex items-center justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <RiHourglassLine className="text-muted-foreground" size={14} />
+        {(searchApplied || links).map((link) => {
+          const scannedData = allPages?.find((page) => page.url === link.url);
+          return (
+            <div className="bg-card p-3 rounded-md flex items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  {scannedData?.status === "completed" ? (
+                    <RiCheckboxCircleFill size={14} />
+                  ) : scannedData?.status === "starting" ? (
+                    <RiHourglassLine className="animate-spin" size={14} />
+                  ) : (
+                    <RiCloseCircleLine
+                      className="text-muted-foreground"
+                      size={14}
+                    />
+                  )}
 
-                <p className="font-semibold truncate w-[calc(100% - 2rem)]">
-                  {link.title}
-                </p>
+                  <p className="font-semibold truncate w-[calc(100% - 2rem)]">
+                    {link.title}
+                  </p>
+                </div>
+                <a
+                  className="text-sm text-muted-foreground"
+                  target="_blank"
+                  href={link.url}
+                >
+                  {link.url}
+                </a>
               </div>
-              <a
-                className="text-sm text-muted-foreground"
-                target="_blank"
-                href={link.url}
-              >
-                {link.url}
-              </a>
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <RiMore2Line />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>
+                    {scannedData ? "Page scanned" : "Page not scanned"}
+                  </DropdownMenuLabel>
+                  {!scannedData && (
+                    <DropdownMenuItem
+                      onClick={() => handleStartScrape(link.url, link.title)}
+                    >
+                      Scan
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <RiMore2Line />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>Page not scanned</DropdownMenuLabel>
-                <DropdownMenuItem>Scan</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
