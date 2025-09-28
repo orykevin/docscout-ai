@@ -3,6 +3,7 @@ import {
   RiCloseCircleLine,
   RiCloseLine,
   RiDownload2Line,
+  RiErrorWarningLine,
   RiFilePdf2Line,
   RiFileTextLine,
   RiFileWordLine,
@@ -22,17 +23,20 @@ import React from "react";
 
 import { formatBytes } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useAction, useConvex, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import DialogBase from "@/components/dialog-base";
 import { Button } from "@/components/ui/button";
 import { useConvexMutation } from "@/lib/convex-functions";
+import { useCustomer } from "autumn-js/react";
+import { toast } from "sonner";
 
 const FileDocumentationDetail = ({
   documentationId,
 }: {
   documentationId: Id<"documentation">;
 }) => {
+  const customer = useCustomer();
   const [selectedFiles, setSelectedFiles] =
     React.useState<Id<"fileDocumentation"> | null>(null);
 
@@ -47,16 +51,40 @@ const FileDocumentationDetail = ({
     api.v1.documentation.reScanFileDocument,
   );
 
+  const decrement = useAction(api.v1.documentation.decrementUsage);
+
   const handleDeleteFile = () => {
     if (isPending || !selectedFiles || isScanning) return;
-    mutate({ documentationId, fileDocumentationId: selectedFiles }).then(() => {
-      setSelectedFiles(null);
-    });
+    mutate({ documentationId, fileDocumentationId: selectedFiles })
+      .then(() => {
+        setSelectedFiles(null);
+        toast.success("File deleted successfully");
+      })
+      .catch((e) => {
+        console.error(e);
+        toast.error("Failed to delete file");
+      });
   };
 
-  const handleScanFile = (fileDocumentationId: Id<"fileDocumentation">) => {
-    if (isPending || isScanning) return;
-    scanFile({ documentationId, fileDocumentationId });
+  const handleScanFile = async (
+    fileDocumentationId: Id<"fileDocumentation">,
+  ) => {
+    if (!customer) return;
+    const scansFeature = customer.customer?.features?.scans;
+    if (!scansFeature || (scansFeature.balance || 0) <= 0) {
+      toast.error("Insufficient balance to scan");
+      return;
+    }
+
+    try {
+      if (isPending || isScanning) return;
+      await scanFile({ documentationId, fileDocumentationId });
+      await decrement({ value: 1 });
+      toast.success("File scanned successfully");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to scan file");
+    }
   };
 
   if (!filesData) return "Loading data...";
@@ -84,6 +112,8 @@ const FileDocumentationDetail = ({
                       <RiHourglass2Line className="animate-spin" size={16} />
                     ) : file?.status === "completed" ? (
                       <RiCheckboxCircleFill size={16} />
+                    ) : file?.status === "failed" ? (
+                      <RiErrorWarningLine size={16} className="text-red-500" />
                     ) : (
                       <RiCloseCircleLine
                         size={16}

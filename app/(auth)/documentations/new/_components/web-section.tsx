@@ -20,7 +20,7 @@ const WebSection = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8 items-center mt-12">
+    <div className="flex flex-col gap-8 items-center mt-8">
       <div className="w-[90%] max-w-2xl relative">
         <div className="absolute left-4 top-3 border-r-2 pr-3 ">
           <span className="text-muted-foreground">https://</span>
@@ -32,7 +32,7 @@ const WebSection = () => {
         ></Input>
       </div>
 
-      <Button onClick={handleStartScrape}>
+      <Button onClick={handleStartScrape} disabled={isPending}>
         {isPending ? "Scraping page ..." : "Scrape documentation"}
       </Button>
     </div>

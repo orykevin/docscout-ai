@@ -47,6 +47,7 @@ export const enhanceMarkdown = internalAction({
                     'Authorization': 'Bearer ' + process.env.JINA_AI_API_KEY,
                     'Content-Type': 'application/json',
                     'X-Remove-Selector': 'header, footer, img, svg',
+                    'X-Proxy': 'auto',
                     'X-Respond-With': 'readerlm-v2'
                 },
                 body: JSON.stringify(data)

@@ -13,9 +13,11 @@ import {
   RiFileWordLine,
   RiMarkdownLine,
 } from "@remixicon/react";
+import { useCustomer } from "autumn-js/react";
 import { useRouter } from "next/navigation";
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { toast } from "sonner";
 
 export type FileItem = {
   id: string;
@@ -28,6 +30,7 @@ export type FileItem = {
 
 const FileUpload = () => {
   const router = useRouter();
+  const customer = useCustomer();
   const [files, setFiles] = React.useState<FileItem[]>([]);
   const inputNameRef = React.useRef<HTMLInputElement>(null);
   const { upload } = useConvexUploadFile(api.v1.upload, true);
@@ -108,9 +111,23 @@ const FileUpload = () => {
       isPending ||
       files.length === 0 ||
       inputNameRef.current === null ||
-      inputNameRef.current.value === ""
+      inputNameRef.current.value === "" ||
+      !customer
     )
       return;
+    const scansFeature = customer.customer?.features?.scans;
+
+    if (
+      !scansFeature ||
+      (scansFeature.balance || 0) <= 0 ||
+      (scansFeature.balance || 0) < files.length
+    ) {
+      toast.error(
+        "Insufficient balance to scan " + (files.length > 1 ? "files" : "file"),
+      );
+      return;
+    }
+
     const filesPayload = files
       .filter((f) => f.isUploaded)
       .map((f) => ({
@@ -125,13 +142,17 @@ const FileUpload = () => {
     })
       .then((documentationId) => {
         if (!documentationId) return;
+        toast.success("File uploaded and saved successfully");
         router.push("/documentations/" + documentationId);
       })
-      .catch((e) => console.error(e));
+      .catch((e) => {
+        console.log(e);
+        toast.error("Failed to save documentation");
+      });
   };
 
   return (
-    <div className="mt-6 max-w-2xl mx-auto">
+    <div className="mt-4 max-w-2xl mx-auto">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div className="flex-1">
           <Label htmlFor="name">Name</Label>

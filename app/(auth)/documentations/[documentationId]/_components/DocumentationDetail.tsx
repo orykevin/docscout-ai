@@ -21,6 +21,7 @@ import { useConvexMutation } from "@/lib/convex-functions";
 import { Loader2 } from "lucide-react";
 import AddFileDialog from "./AddFileDialog";
 import { WebDocumentationDetail } from "./WebDocumentationDetail";
+import { useCustomer } from "autumn-js/react";
 
 const DocumentationDetail = ({
   documentationId,
@@ -133,26 +134,11 @@ const DocumentationDetail = ({
             <FileDocumentationDetail documentationId={documentationId} />
           </>
         ) : (
-          <>
-            <div className="mt-4 mb-2 flex items-center justify-between">
-              {data.draft ? (
-                <>
-                  <div>
-                    <p className="text-sm ">Draft</p>
-                    <p className="font-semibold">
-                      {data.activePage} / {data.totalPage} Scanned
-                    </p>
-                  </div>
-                  <Button className="mt-4 mb-4" size="sm">
-                    Upgrade to Pro to process all pages
-                  </Button>{" "}
-                </>
-              ) : (
-                <p className="text-base font-semibold">All Pages</p>
-              )}
-            </div>
-            <WebDocumentationDetail documentationId={documentationId} />
-          </>
+          <WebDocumentationDetail
+            documentationId={documentationId}
+            totalPage={data.totalPage}
+            activePage={data.activePage}
+          />
         )}
       </div>
     </div>

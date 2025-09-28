@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { internalMutation, mutation, MutationCtx, query } from "../_generated/server";
+import { action, internalMutation, mutation, MutationCtx, query } from "../_generated/server";
 import { isAuthenticated, isDocumentationOwner } from "../middleware";
 import { WithoutSystemFields } from "convex/server";
 import { Doc, Id } from "../_generated/dataModel";
@@ -7,6 +7,7 @@ import { file } from "better-auth";
 import { deleteFileHelper } from "./upload";
 import { documentationSchema } from "../tables/doumentationTable";
 import { internal } from "../_generated/api";
+import { autumn } from "../autumn";
 
 // documentation
 
@@ -39,7 +40,6 @@ export const updateDocumentation = mutation({
         name: v.string()
     }, handler: async (ctx, { name, documentationId }) => {
         const { documentation } = await isDocumentationOwner(ctx, documentationId)
-        const now = new Date
         await ctx.db.patch(documentation._id, { name, updatedAt: Date.now() })
     },
 })
@@ -189,6 +189,18 @@ export const updateFileDocumentation = internalMutation({
     }
 })
 
+export const decrementUsage = action({
+    args: {
+        value: v.number()
+    },
+    handler: async (ctx, { value }) => {
+        await autumn.track(ctx, {
+            featureId: "scans",
+            value: value
+        })
+    }
+})
+
 export const updateFailedEmbedFile = internalMutation({
     args: {
         fileDocumentationId: v.id("fileDocumentation"),
@@ -269,7 +281,7 @@ export const startScrapeWebData = mutation({
         pageUrl: v.string(),
         titleUrl: v.string()
     }, handler: async (ctx, args) => {
-        const { documentation, userId } = await isDocumentationOwner(ctx, args.documentationId);
+        const { documentation } = await isDocumentationOwner(ctx, args.documentationId);
 
         // check if user can scrape web / check if user have token to proceed
 
@@ -298,6 +310,7 @@ export const updateScrapeWebData = internalMutation({
         markdown: v.string(),
         totalChunks: v.number()
     }, handler: async (ctx, args) => {
+        const user = await ctx.auth.getUserIdentity();
         const documentation = await ctx.db.get(args.documentationId);
         if (!documentation) throw new ConvexError("Documentation not found");
         await ctx.db.patch(args.pageDocumentationId, {
@@ -337,6 +350,130 @@ export const createPageDocumentationChunk = internalMutation({
             embedding: args.embbeding
         })
     },
+})
+
+export const scanAllPage = action({
+    args: {
+        documentationId: v.id("documentation"),
+    }, handler: async (ctx, args) => {
+        const user = await ctx.auth.getUserIdentity();
+        if (!user) throw new ConvexError("Unauthenticated");
+
+        const { data } = await autumn.check(ctx, {
+            featureId: "documentation_limit"
+        })
+        if (!data?.allowed) throw new ConvexError("Not allowed to scans all pages");
+
+        const { data: scans } = await autumn.check(ctx, {
+            featureId: "scans"
+        })
+        if (!scans || !scans.balance) throw new ConvexError("Insufficient scan credits")
+
+        const result = await ctx.runMutation(internal.v1.documentation.scanAllPageMutation, {
+            documentationId: args.documentationId,
+            remainingBalance: scans.balance,
+            userId: user.subject
+        })
+        if (result) {
+            await autumn.track(ctx, {
+                featureId: "scans",
+                value: result.totalScans
+            })
+        }
+
+        return true
+    },
+})
+
+export const scanAllPageMutation = internalMutation({
+    args: {
+        remainingBalance: v.number(),
+        documentationId: v.id("documentation"),
+        userId: v.string()
+    }, handler: async (ctx, args) => {
+
+        const documentation = await ctx.db.get(args.documentationId);
+        if (!documentation) throw new ConvexError("Documentation not found");
+        if (documentation.userId !== args.userId) throw new ConvexError("Documentation not match")
+
+        const allScannedDocumentation = await ctx.db.query("pageDocumentation").withIndex("byDocumentationId", (q) => q.eq("documentationId", documentation._id)).collect();
+        const webLinks = await ctx.db.query("webLinks").withIndex("byDocumentationId", (q) => q.eq("documentationId", documentation._id)).first();
+        if (!webLinks) throw new ConvexError("Web Link Not found")
+        const allLinks: { url: string, title: string }[] = JSON.parse(webLinks?.links)
+        const unscannedLink = allLinks.filter((link) => !allScannedDocumentation.some((scanned) => scanned.url === link.url && scanned.status !== "failed"))
+        if (unscannedLink.length > args.remainingBalance) throw new ConvexError("Balance not enough");
+
+        await Promise.all(unscannedLink.map(async (link) => {
+            const createdPageDocumentation = allScannedDocumentation.find((scanned) => scanned.url === link.url);
+            if (createdPageDocumentation) {
+                await ctx.db.patch(createdPageDocumentation._id, {
+                    status: "starting"
+                })
+
+                await ctx.scheduler.runAfter(0, internal.v1.ai.enhanceMarkdown, {
+                    url: createdPageDocumentation.url,
+                    documentationId: createdPageDocumentation.documentationId,
+                    pageDocumentationId: createdPageDocumentation._id
+                })
+
+            } else {
+                const pageDocumentationId = await ctx.db.insert("pageDocumentation", {
+                    documentationId: documentation._id,
+                    status: "starting",
+                    url: link.url,
+                    title: link.title,
+                    markdown: "",
+                })
+
+                await ctx.scheduler.runAfter(0, internal.v1.ai.enhanceMarkdown, {
+                    url: link.url,
+                    documentationId: documentation._id,
+                    pageDocumentationId
+                })
+            }
+
+        }))
+
+        return {
+            totalScans: unscannedLink.length
+        }
+    },
+})
+
+export const deleteLinkPage = mutation({
+    args: {
+        url: v.string(),
+        documentationId: v.id("documentation"),
+    }, handler: async (ctx, args) => {
+        const { documentation } = await isDocumentationOwner(ctx, args.documentationId)
+
+        const webLinks = await ctx.db.query("webLinks").withIndex("byDocumentationId", (q) => q.eq("documentationId", documentation._id)).first();
+        if (!webLinks) throw new ConvexError("Web Links not found");
+
+        const pageDocumentation = await ctx.db.query("pageDocumentation").withIndex("byDocumentationId", (q) => q.eq("documentationId", documentation._id).eq("url", args.url)).first();
+
+        if (pageDocumentation) {
+            const allChunks = await ctx.db.query("pageDocumentationChunks").withIndex("byPageDocumentation", (q) => q.eq("pageDocumentId", pageDocumentation._id)).collect();
+            await Promise.all(allChunks.map(async (chunk) => {
+                await ctx.db.delete(chunk._id)
+            }))
+
+            await ctx.db.delete(pageDocumentation._id)
+        }
+
+        const newLinks: { url: string }[] = JSON.parse(webLinks.links)
+        const filteredLinks = JSON.stringify(newLinks.filter((link) => link.url !== args.url))
+
+        await ctx.db.patch(webLinks._id, {
+            links: filteredLinks
+        })
+        await ctx.db.patch(documentation._id, {
+            totalPage: documentation.totalPage - 1,
+            activePage: documentation.activePage - (pageDocumentation ? 1 : 0)
+        })
+
+        return true
+    }
 })
 
 // helper

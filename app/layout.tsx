@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sooner";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ConvexClientProvider>{children}</ConvexClientProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

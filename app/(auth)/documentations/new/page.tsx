@@ -1,12 +1,7 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  RiFile2Line,
-  RiGlobalLine,
-  RiGlobeLine,
-  RiInputField,
-} from "@remixicon/react";
+import { RiFile2Line, RiGlobalLine } from "@remixicon/react";
 import { useState } from "react";
 import WebSection from "./_components/web-section";
 import FileUpload from "./_components/file-upload";
@@ -28,7 +23,7 @@ const NewDocumentationPage = () => {
           defaultValue="web"
           onValueChange={(tab) => setTab(tab)}
         >
-          <TabsList className="bg-background mb-3 mx-auto h-auto -space-x-px p-0 shadow-xs rtl:space-x-reverse">
+          <TabsList className="bg-background mx-auto h-auto -space-x-px p-0 shadow-xs rtl:space-x-reverse">
             <TabsTrigger
               value="web"
               className="data-[state=active]:bg-muted data-[state=active]:after:bg-primary relative overflow-hidden rounded-md border py-3 px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e text-lg"
