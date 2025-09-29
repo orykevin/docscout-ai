@@ -10,25 +10,29 @@ import {
   RiFileWordLine,
   RiMarkdownLine,
 } from "@remixicon/react";
-import React, { useCallback } from "react";
+import React, { use, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import type { FileItem } from "../../new/_components/file-upload";
 import { api } from "@/convex/_generated/api";
 import { cn, formatBytes } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
+import { useAction } from "convex/react";
+import { useCustomer } from "autumn-js/react";
+import { toast } from "sonner";
 
 const AddFileDialog = ({
   documentationId,
 }: {
   documentationId: Id<"documentation">;
 }) => {
+  const customer = useCustomer();
   const [open, setOpen] = React.useState(false);
   const [files, setFiles] = React.useState<FileItem[]>([]);
-  const inputNameRef = React.useRef<HTMLInputElement>(null);
   const { upload } = useConvexUploadFile(api.v1.upload);
   const { mutate, isPending } = useConvexMutation(
     api.v1.documentation.addFilesDocumentation,
   );
+  const decrement = useAction(api.v1.documentation.decrementUsage);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     // Do something with the files
@@ -98,7 +102,22 @@ const AddFileDialog = ({
     maxSize: 1 * 1024 * 1024,
   });
 
+  console.log(customer);
+
   const handleSaveUploadedFile = () => {
+    if (!customer) return;
+    const scansFeature = customer.customer?.features?.scans;
+    if (
+      !scansFeature ||
+      (scansFeature.balance || 0) <= 0 ||
+      (scansFeature.balance || 0) < files.length
+    ) {
+      toast.error(
+        "Insufficient balance to scan " + (files.length > 1 ? "files" : "file"),
+      );
+      return;
+    }
+
     mutate({
       documentationId,
       files: files.map((f) => ({
@@ -110,9 +129,14 @@ const AddFileDialog = ({
       .then((documentationId) => {
         if (!documentationId) return;
         setOpen(false);
+        decrement({ value: files.length });
+        toast.success("File uploaded and saved successfully");
         setFiles([]);
       })
-      .catch((e) => console.error(e));
+      .catch((e) => {
+        toast.error("Failed to save file");
+        console.error(e);
+      });
   };
 
   return (

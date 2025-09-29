@@ -117,17 +117,16 @@ export const scrapeSiteInfo = action({
             const scrapeResponse = await fetch(scrapeUrl, scrapeOptions);
             const scrapeDataResponse = await scrapeResponse.json() as MetadataResponse
             const scrapeData = scrapeDataResponse.data.metadata
+            const filterMapData = mapData.links.filter((link) => link.url)
 
-            const filteredLinks = mapData.links.filter((link) => link.title);
             console.log(scrapeData)
             console.log(mapData)
-            console.log(filteredLinks)
 
             const documentationId: Id<"documentation"> = await ctx.runMutation(internal.v1.documentation.createDocumentation, {
                 name: scrapeData.title,
                 link: scrapeData.sourceURL,
                 activePage: 0,
-                totalPage: filteredLinks.length,
+                totalPage: filterMapData.length,
                 userId: userId.subject,
                 type: "web",
                 draft: true,
@@ -136,7 +135,7 @@ export const scrapeSiteInfo = action({
             await ctx.runMutation(internal.v1.scrapeWeb.saveWebData, {
                 documentationId,
                 webInfo: JSON.stringify(scrapeData),
-                webLinks: JSON.stringify(mapData.links)
+                webLinks: JSON.stringify(filterMapData)
             })
 
             if (!documentationId) throw new ConvexError("Failed when try to scrape")

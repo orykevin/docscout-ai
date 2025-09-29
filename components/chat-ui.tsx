@@ -21,44 +21,6 @@ import {
   DropdownMenuItem,
 } from "./ui/dropdown-menu";
 
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-
-function markdownToJson(markdown: string) {
-  const tree = unified().use(remarkParse).parse(markdown) as any;
-  const result = [];
-
-  let current = null;
-  console.log(tree);
-  for (const node of tree.children) {
-    if (node.type === "heading") {
-      if (current) result.push(current);
-      current = {
-        header: node.children.map((c: any) => c.value || "").join(""),
-        content: "",
-      };
-    } else if (current) {
-      if (node.type === "paragraph") {
-        current.content +=
-          node.children.map((c: any) => c.value || "").join("") + "\n\n";
-      } else if (node.type === "list") {
-        for (const item of node.children) {
-          current.content +=
-            "- " +
-            item.children[0].children.map((c: any) => c.value || "").join("") +
-            "\n";
-        }
-      } else if (node.type === "code") {
-        current.content +=
-          "```" + (node.lang || "") + "\n" + node.value + "\n```\n";
-      }
-    }
-  }
-
-  if (current) result.push(current);
-  return result;
-}
-
 const documentations = [
   {
     id: "1",
