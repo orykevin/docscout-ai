@@ -14,7 +14,7 @@ export function ModeToggle({
   return (
     <div className="w-full flex justify-center mb-6">
       <div
-        className="inline-flex rounded-full p-1 shadow max-w-2xl bg-neutral-800/80"
+        className="inline-flex rounded-full p-1 shadow max-w-3xl bg-neutral-800/80"
         role="tablist"
         aria-label="Dashboard mode"
       >

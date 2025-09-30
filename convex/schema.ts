@@ -1,6 +1,7 @@
 import { defineSchema } from "convex/server";
 import { documentationTable, fileDocumentationChunksTable, fileDocumentationTable } from "./tables/doumentationTable";
 import { documentationPageChunksTable, documentationPageTable, webInfoTable, webLinksTable } from "./tables/webDataTable";
+import { messagesTable, threadTable } from "./tables/threadTable";
 
 // The schema is entirely optional.
 // You can delete this file (schema.ts) and the
@@ -13,5 +14,7 @@ export default defineSchema({
   webInfo: webInfoTable,
   webLinks: webLinksTable,
   pageDocumentation: documentationPageTable,
-  pageDocumentationChunks: documentationPageChunksTable
+  pageDocumentationChunks: documentationPageChunksTable,
+  thread: threadTable,
+  messages: messagesTable
 });

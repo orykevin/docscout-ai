@@ -117,7 +117,7 @@ export const scrapeSiteInfo = action({
             const scrapeResponse = await fetch(scrapeUrl, scrapeOptions);
             const scrapeDataResponse = await scrapeResponse.json() as MetadataResponse
             const scrapeData = scrapeDataResponse.data.metadata
-            const filterMapData = mapData.links.filter((link) => link.url)
+            const filterMapData = mapData.links.filter((link) => link.title)
 
             console.log(scrapeData)
             console.log(mapData)

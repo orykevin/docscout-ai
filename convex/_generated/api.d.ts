@@ -24,9 +24,11 @@ import type * as emails_verifyOTP from "../emails/verifyOTP.js";
 import type * as http from "../http.js";
 import type * as middleware from "../middleware.js";
 import type * as tables_doumentationTable from "../tables/doumentationTable.js";
+import type * as tables_threadTable from "../tables/threadTable.js";
 import type * as tables_webDataTable from "../tables/webDataTable.js";
 import type * as utils_lib from "../utils/lib.js";
 import type * as v1_ai from "../v1/ai.js";
+import type * as v1_chat from "../v1/chat.js";
 import type * as v1_documentation from "../v1/documentation.js";
 import type * as v1_firecrawl from "../v1/firecrawl.js";
 import type * as v1_scrapeWeb from "../v1/scrapeWeb.js";
@@ -63,9 +65,11 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   middleware: typeof middleware;
   "tables/doumentationTable": typeof tables_doumentationTable;
+  "tables/threadTable": typeof tables_threadTable;
   "tables/webDataTable": typeof tables_webDataTable;
   "utils/lib": typeof utils_lib;
   "v1/ai": typeof v1_ai;
+  "v1/chat": typeof v1_chat;
   "v1/documentation": typeof v1_documentation;
   "v1/firecrawl": typeof v1_firecrawl;
   "v1/scrapeWeb": typeof v1_scrapeWeb;
@@ -1415,4 +1419,39 @@ export declare const components: {
     };
   };
   autumn: {};
+  persistentTextStreaming: {
+    lib: {
+      addChunk: FunctionReference<
+        "mutation",
+        "internal",
+        { final: boolean; streamId: string; text: string },
+        any
+      >;
+      createStream: FunctionReference<"mutation", "internal", {}, any>;
+      getStreamStatus: FunctionReference<
+        "query",
+        "internal",
+        { streamId: string },
+        "pending" | "streaming" | "done" | "error" | "timeout"
+      >;
+      getStreamText: FunctionReference<
+        "query",
+        "internal",
+        { streamId: string },
+        {
+          status: "pending" | "streaming" | "done" | "error" | "timeout";
+          text: string;
+        }
+      >;
+      setStreamStatus: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          status: "pending" | "streaming" | "done" | "error" | "timeout";
+          streamId: string;
+        },
+        any
+      >;
+    };
+  };
 };

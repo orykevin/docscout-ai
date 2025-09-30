@@ -20,6 +20,18 @@ export const getAllDocumentation = query({
     }
 })
 
+export const getDocumentationOptions = query({
+    handler: async (ctx) => {
+        const userId = await isAuthenticated(ctx);
+        const allDocumentation = await ctx.db.query("documentation").withIndex("byUserId", (q) => q.eq("userId", userId)).collect();
+        return allDocumentation.map((documentation) => ({
+            name: documentation.name,
+            id: documentation._id,
+            type: documentation.type
+        }))
+    },
+})
+
 export const getDocumentation = query({
     args: {
         documentationId: v.id("documentation")
@@ -282,16 +294,24 @@ export const startScrapeWebData = mutation({
         titleUrl: v.string()
     }, handler: async (ctx, args) => {
         const { documentation } = await isDocumentationOwner(ctx, args.documentationId);
-
+        const pageDocumentation = await ctx.db.query("pageDocumentation").withIndex("byDocumentationId", (q) => q.eq("documentationId", args.documentationId).eq("url", args.pageUrl)).first();
         // check if user can scrape web / check if user have token to proceed
+        let pageDocumentationId = null
 
-        const pageDocumentationId = await ctx.db.insert("pageDocumentation", {
-            documentationId: documentation._id,
-            status: "starting",
-            url: args.pageUrl,
-            title: args.titleUrl,
-            markdown: "",
-        })
+        if (pageDocumentation) {
+            await ctx.db.patch(pageDocumentation._id, {
+                status: "starting"
+            })
+            pageDocumentationId = pageDocumentation._id
+        } else {
+            pageDocumentationId = await ctx.db.insert("pageDocumentation", {
+                documentationId: documentation._id,
+                status: "starting",
+                url: args.pageUrl,
+                title: args.titleUrl,
+                markdown: "",
+            })
+        }
 
         await ctx.scheduler.runAfter(0, internal.v1.ai.enhanceMarkdown, {
             url: args.pageUrl,
@@ -318,8 +338,9 @@ export const updateScrapeWebData = internalMutation({
             markdown: args.markdown,
             totalChunks: args.totalChunks,
         })
+        const updatedActive = documentation.activePage + 1
         await ctx.db.patch(documentation._id, {
-            activePage: documentation.activePage + 1
+            activePage: updatedActive > documentation.totalPage ? documentation.totalPage : updatedActive
         })
     }
 })
@@ -395,6 +416,9 @@ export const scanAllPageMutation = internalMutation({
         const documentation = await ctx.db.get(args.documentationId);
         if (!documentation) throw new ConvexError("Documentation not found");
         if (documentation.userId !== args.userId) throw new ConvexError("Documentation not match")
+        await ctx.db.patch(documentation._id, {
+            status: "scan-all"
+        })
 
         const allScannedDocumentation = await ctx.db.query("pageDocumentation").withIndex("byDocumentationId", (q) => q.eq("documentationId", documentation._id)).collect();
         const webLinks = await ctx.db.query("webLinks").withIndex("byDocumentationId", (q) => q.eq("documentationId", documentation._id)).first();
@@ -403,14 +427,14 @@ export const scanAllPageMutation = internalMutation({
         const unscannedLink = allLinks.filter((link) => !allScannedDocumentation.some((scanned) => scanned.url === link.url && scanned.status !== "failed"))
         if (unscannedLink.length > args.remainingBalance) throw new ConvexError("Balance not enough");
 
-        await Promise.all(unscannedLink.map(async (link) => {
+        await Promise.all(unscannedLink.map(async (link, index) => {
             const createdPageDocumentation = allScannedDocumentation.find((scanned) => scanned.url === link.url);
             if (createdPageDocumentation) {
                 await ctx.db.patch(createdPageDocumentation._id, {
                     status: "starting"
                 })
 
-                await ctx.scheduler.runAfter(0, internal.v1.ai.enhanceMarkdown, {
+                await ctx.scheduler.runAfter(index * 10000, internal.v1.ai.enhanceMarkdown, {
                     url: createdPageDocumentation.url,
                     documentationId: createdPageDocumentation.documentationId,
                     pageDocumentationId: createdPageDocumentation._id
@@ -425,7 +449,7 @@ export const scanAllPageMutation = internalMutation({
                     markdown: "",
                 })
 
-                await ctx.scheduler.runAfter(0, internal.v1.ai.enhanceMarkdown, {
+                await ctx.scheduler.runAfter(index * 10000, internal.v1.ai.enhanceMarkdown, {
                     url: link.url,
                     documentationId: documentation._id,
                     pageDocumentationId
@@ -474,6 +498,21 @@ export const deleteLinkPage = mutation({
 
         return true
     }
+})
+
+export const getAllPageDocumentationChunksContent = query({
+    args: {
+        pageDocumentationIds: v.array(v.id("pageDocumentationChunks"))
+    }, handler: async (ctx, { pageDocumentationIds }) => {
+        const collectedContent = await Promise.all(pageDocumentationIds.map(async (id) => {
+            const pageDocumentation = await ctx.db.get(id);
+            return pageDocumentation?.content
+        }));
+
+        const filteredContent = collectedContent.filter((content) => content !== undefined);
+
+        return filteredContent;
+    },
 })
 
 // helper

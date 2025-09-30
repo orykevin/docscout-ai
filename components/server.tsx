@@ -42,7 +42,7 @@ export const AppContainer = ({ children }: PropsWithChildren) => {
 
 export const AppHeader = ({ children }: PropsWithChildren) => {
   return (
-    <header className="flex items-center justify-between max-w-2xl mx-auto">
+    <header className="flex items-center justify-between max-w-3xl mx-auto">
       {children}
     </header>
   );
@@ -93,7 +93,7 @@ export const AddTodoForm = ({
 export const TodoListContainer = ({ children }: PropsWithChildren) => {
   return (
     <main>
-      <div className="max-w-2xl mx-auto space-y-6">{children}</div>
+      <div className="max-w-3xl mx-auto space-y-6">{children}</div>
     </main>
   );
 };

@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { Textarea } from "./ui/textarea";
 import ToolTipButton from "./ui/tooltip-button";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   RiArrowUpLine,
   RiCheckLine,
@@ -20,149 +20,183 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "./ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { useConvexMutation, useUserQuery } from "@/lib/convex-functions";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { Badge } from "./ui/badge";
+import { useRouter } from "next/navigation";
 
-const documentations = [
-  {
-    id: "1",
-    name: "ThreeJS",
-    url: "https://threejs.org/",
-  },
-  {
-    id: "2",
-    name: "React Three Fiber",
-    url: "https://github.com/pmndrs/react-three-fiber",
-  },
-  {
-    id: "3",
-    name: "three-vrm",
-    url: "https://github.com/pixiv/three-vrm",
-  },
-  {
-    id: "4",
-    name: "three-vrm 2",
-    url: "https://github.com/pixiv/three-vrm",
-  },
-  {
-    id: "5",
-    name: "three-vrm 3",
-    url: "https://github.com/pixiv/three-vrm",
-  },
-];
+type ChatUIProps = {
+  isFrontPage?: boolean;
+  defaultSelectedDocumentationIds?: Id<"documentation">[];
+  threadId?: Id<"thread">;
+};
 
-const text =
-  '```json\n{\n  "sections": [\n    {\n      "header": "Showing UI based on authentication state",\n      "content": "You can control which UI is shown when the user is signed in or signed out using Convex\'s `<Authenticated>`, `<Unauthenticated>` and `<AuthLoading>` helper components. These components are powered by Convex\'s `useConvexAuth()` hook, which provides `isAuthenticated` and `isLoading` flags. This hook can be used directly if preferred.\\n\\nIt\'s important to use Convex\'s authentication state components or the `useConvexAuth()` hook instead of Better Auth\'s `getSession()` or `useSession()` when you need to check whether the user is logged in or not. Better Auth will reflect an authenticated user before Convex does, as the Convex client must subsequently validate the token provided by Better Auth. Convex functions that require authentication can throw if called before Convex has validated the token.\\n\\nIn the following example, the `<Content />` component is a child of `<Authenticated>`, so its content and any of its child components are guaranteed to have an authenticated user, and Convex queries can require authentication."\n    },\n    {\n      "header": "Authentication state in Convex functions",\n      "content": "If the client is authenticated, you can access the information stored in the JWT via `ctx.auth.getUserIdentity`. If the client is **not** authenticated, `ctx.auth.getUserIdentity` will return null.\\n\\nMake sure that the component calling this query is a child of `<Authenticated>` from `convex/react`, or that `isAuthenticated` from `useConvexAuth()` is `true`. Otherwise, it will throw on page load."\n    }\n  ],\n  "important_content": [\n    {\n      "section_title": "Showing UI based on authentication state",\n      "details": "<main>\\n  <Unauthenticated>Logged out</Unauthenticated>\\n  <Authenticated>Logged in</Authenticated>\\n  <AuthLoading>Loading...</AuthLoading>\\n</main>"\n    },\n    {\n      "section_title": "Authentication state in Convex functions",\n      "details": "<convex/messages.ts>\\nexport const getCurrentUser = query({\\nargs: {},\\nhandler: async (ctx) => {\\nreturn await authComponent.getAuthUser(ctx);\\n},\\n});\\nexport const getForCurrentUser = query({\\nargs: {},\\nhandler: async (ctx) => {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void {\\ncallable function:\\ndefineQuery(): void{\\ncallable function:\\ndefineQuery():void{\\ncallable function:\\ndefineQuery():void{\\ncallable function:\\ndefineQuery():void{\\ncallable function:\\ndefineQuery():void{\\ncallable function:\\ndefineQuery():void{\\ncallback callback:function(){}\\nsimpleCallback callback:function(){}\\ngenericCallback genericCallback:function(){}\\ngenericSimpleCallback genericSimpleCallback:function(){}\\ngenericGenericCallback genericGenericCallback:function(){}\\ngenericGenericSimpleCallback genericGenericSimpleCallback:function(){}\\ngenericGenericGenericCallback genericGenericGenericCallback:function(){}\\ngenericGenericSimpleGenericCallback genericGenericSimpleGenericCallback:function(){}\\ngenericCustomType customType:{}}\\ntype CustomType = {}}\\ntype CustomType = {}}\\ntype CustomType = {}}\\ntype CustomType = {}}\\ntype CustomType = {}}\\ntype CustomType = {}}\\ntype CustomType = {}}\\ntype CustomType = {}}"\n    }\n  ]\n}\n```\n';
+const ChatUI = ({
+  isFrontPage,
+  defaultSelectedDocumentationIds,
+  threadId,
+}: ChatUIProps) => {
+  const router = useRouter();
+  const [selectedDoc, setSelectedDoc] = React.useState<Id<"documentation">[]>(
+    defaultSelectedDocumentationIds || [],
+  );
+  const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
-function extractJson(raw: string) {
-  // 1. Remove markdown fences like ```json ... ```
-  const cleaned = raw.replace(/```json|```/g, "").trim();
+  const allDocumentationOption = useUserQuery(
+    api.v1.documentation.getDocumentationOptions,
+  );
+  const { mutate: createThread, isPending: isCreating } = useConvexMutation(
+    api.v1.chat.createThread,
+  );
+  const { mutate: sendingChat, isPending: isSending } = useConvexMutation(
+    api.v1.chat.sendMessage,
+  );
 
-  try {
-    // 2. Parse into JSON
-    const parsed = JSON.parse(cleaned);
-    return parsed;
-  } catch (err) {
-    console.error("❌ Failed to parse JSON:", err);
-    console.log("Cleaned string:", cleaned.slice(0, 300)); // log preview
-    return null;
-  }
-}
+  const isDisabled = isCreating || isSending;
 
-const ChatUI = () => {
-  const [selectedDoc, setSelectedDoc] = React.useState<string[]>([]);
+  const sendChat = () => {
+    const message = textAreaRef.current?.value;
+    console.log("message");
+    if (isCreating || !message || message.trim() === "") return;
 
-  useEffect(() => {
-    // fetch("/test-final-3.md").then((res) => {
-    //   res.text().then((text) => {
-    //     console.log(text);
-    //     console.log(markdownToJson(text));
-    //   });
-    // });
-    // fetch("/test-final-2.md").then((res) => {
-    //   res.text().then((text) => {
-    //     console.log(text);
-    //     console.log(markdownToJson(text));
-    //   });
-    // });
-    fetch("/test-react-form-1.md").then((res) => {
-      const jsonData = extractJson(text);
-      console.log(jsonData);
-    });
-  }, []);
+    console.log("submited");
+    if (isFrontPage) {
+      //create thread
+      createThread({
+        documentationIds: selectedDoc,
+        message,
+      }).then((threadId) => {
+        router.push(`/chat/${threadId}`);
+      });
+    } else {
+      //ai chat
+      if (!threadId) return;
+      sendingChat({
+        threadId,
+        content: message,
+        documentationIds: selectedDoc,
+      });
+      textAreaRef.current!.value = "";
+    }
+  };
+
+  const submitHandler = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendChat();
+  };
+
   return (
-    <div className="relative w-full max-w-2xl mx-auto group p-4 bg-input/75 rounded-md shadow-2xl">
-      <Textarea
-        className="peer !h-max max-h-[50vh] text-base field-sizing-content resize-none bg-transparent !ring-0 !border-0 p-0"
-        placeholder="Ask a question..."
-      ></Textarea>
-      <div className="flex items-end justify-between w-full pt-2">
-        <div className="flex gap-2 items-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <ToolTipButton size="iconSm" tooltip="Add Documentation">
-                <RiGitRepositoryCommitsLine />
-              </ToolTipButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {documentations.map((doc) => {
-                const checked = selectedDoc.includes(doc.id);
+    <div
+      className={cn(
+        "relative w-full max-w-3xl mx-auto group p-4 bg-input/75 rounded-md shadow-2xl ",
+      )}
+    >
+      <form onSubmit={submitHandler} ref={formRef} id="form">
+        <Textarea
+          className={cn(
+            "peer !h-max max-h-[50vh] text-base field-sizing-content resize-none bg-transparent !ring-0 !border-0 p-0 ",
+            !isFrontPage && "!min-h-8 h-8",
+          )}
+          placeholder="Ask a question..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendChat();
+            }
+          }}
+          ref={textAreaRef}
+        ></Textarea>
+        <div className="flex items-end justify-between w-full pt-2">
+          <div className="flex gap-2 items-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <ToolTipButton
+                  size="iconSm"
+                  tooltip="Add Documentation"
+                  disabled={!allDocumentationOption}
+                >
+                  <RiGitRepositoryCommitsLine />
+                </ToolTipButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {allDocumentationOption &&
+                  allDocumentationOption.map((doc) => {
+                    const checked = selectedDoc.includes(doc.id);
+                    return (
+                      <DropdownMenuItem
+                        key={doc.id}
+                        onSelect={(e) => e.preventDefault()}
+                        onClick={() =>
+                          setSelectedDoc((prev) => [...prev, doc.id])
+                        }
+                        disabled={checked}
+                      >
+                        {checked && <RiCheckLine />}
+                        <span>{doc.name}</span>
+                        <Badge>{doc.type}</Badge>
+                      </DropdownMenuItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <ToolTipButton
+              className="w-8 h-8 min-w-8 min-h-8"
+              size="icon"
+              tooltip="More"
+              variant="outline"
+            >
+              {<Plus />}
+            </ToolTipButton>
+            <div className="flex flex-wrap gap-1 max-w-full">
+              {selectedDoc.map((doc) => {
+                const docData = allDocumentationOption?.find(
+                  (d) => d.id === doc,
+                );
+                if (!docData) return null;
                 return (
-                  <DropdownMenuItem
-                    key={doc.id}
-                    onSelect={(e) => e.preventDefault()}
-                    onClick={() => setSelectedDoc((prev) => [...prev, doc.id])}
-                    disabled={checked}
-                  >
-                    {checked && <RiCheckLine />}
-                    <span>{doc.name}</span>
-                  </DropdownMenuItem>
+                  <div className="h-8 w-max max-w-40 p-2 flex items-center gap-2 bg-input rounded-md text-sm">
+                    <RiCloseLine
+                      onClick={() =>
+                        setSelectedDoc((prev) =>
+                          prev.filter((id) => id !== doc),
+                        )
+                      }
+                      className="hover:text-destructive cursor-pointer min-w-6 min-h-6"
+                    />
+                    <p className="truncate">{docData.name}</p>
+                  </div>
                 );
               })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ToolTipButton
-            className="w-8 h-8 min-w-8 min-h-8"
-            size="icon"
-            tooltip="More"
-            variant="outline"
-          >
-            {<Plus />}
-          </ToolTipButton>
-          <div className="flex flex-wrap gap-1 max-w-full">
-            {selectedDoc.map((doc) => {
-              const docData = documentations.find((d) => d.id === doc);
-              if (!docData) return null;
-              return (
-                <div className="h-8 w-max p-2 flex items-center gap-2 bg-input rounded-md">
-                  <RiCloseLine
-                    onClick={() =>
-                      setSelectedDoc((prev) => prev.filter((id) => id !== doc))
-                    }
-                    className="hover:text-destructive cursor-pointer"
-                  />
-                  {docData.name}
-                </div>
-              );
-            })}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <ToolTipButton
+              className=" w-8 h-8"
+              size="icon"
+              tooltip="Voice"
+              variant="ghost"
+            >
+              {<RiVoiceprintLine />}
+            </ToolTipButton>
+            <ToolTipButton
+              className=" w-8 h-8 group-has-[textarea:placeholder-shown]:disabled"
+              size="icon"
+              tooltip="Send"
+              disabled={isDisabled}
+              onClick={sendChat}
+            >
+              {isDisabled ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RiArrowUpLine />
+              )}
+            </ToolTipButton>
           </div>
         </div>
-        <div className="flex gap-2">
-          <ToolTipButton
-            className=" w-8 h-8"
-            size="icon"
-            tooltip="Voice"
-            variant="ghost"
-          >
-            {<RiVoiceprintLine />}
-          </ToolTipButton>
-          <ToolTipButton
-            className=" w-8 h-8 group-has-[textarea:placeholder-shown]:disabled"
-            size="icon"
-            tooltip="Send"
-          >
-            {<RiArrowUpLine />}
-          </ToolTipButton>
-        </div>
-      </div>
+      </form>
     </div>
   );
 };

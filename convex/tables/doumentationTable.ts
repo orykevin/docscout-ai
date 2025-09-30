@@ -10,6 +10,7 @@ export const documentationSchema = {
     activePage: v.number(),
     updatedAt: v.optional(v.number()),
     draft: v.optional(v.boolean()),
+    status: v.optional(v.string())
 }
 
 export const fileDocumentationSchema = {

@@ -9,12 +9,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
+import { useUserQuery } from "@/lib/convex-functions";
 import {
   RiDeleteBinLine,
   RiFileCheckLine,
@@ -23,14 +25,20 @@ import {
   RiMore2Line,
   RiPencilLine,
 } from "@remixicon/react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 import React from "react";
 
 const AllDocumentationList = () => {
-  const data = useQuery(api.v1.documentation.getAllDocumentation);
+  const data = useUserQuery(api.v1.documentation.getAllDocumentation);
   console.log(data);
-  if (!data) return <div>Loading...</div>;
+  if (!data)
+    return (
+      <div className="grid grid-cols-3 gap-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton className="min-h-[10rem]" />
+        ))}
+      </div>
+    );
 
   return (
     <div>

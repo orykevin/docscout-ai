@@ -1,3 +1,5 @@
+"use client";
+
 import ChatUI from "@/components/chat-ui";
 import React from "react";
 
@@ -8,7 +10,7 @@ const HomePage = () => {
         Just ask and let AI scout your docs
       </h1>
       <div className="pb-20">
-        <ChatUI />
+        <ChatUI isFrontPage />
         <div></div>
       </div>
     </div>

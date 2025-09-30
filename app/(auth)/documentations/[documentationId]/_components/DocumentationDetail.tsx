@@ -76,7 +76,7 @@ const DocumentationDetail = ({
 
   return (
     <div className="mt-3">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <div>
           <Link
             href="/documentations"
@@ -137,7 +137,15 @@ const DocumentationDetail = ({
           <WebDocumentationDetail
             documentationId={documentationId}
             totalPage={data.totalPage}
-            activePage={data.activePage}
+            activePage={
+              data.activePage > data.totalPage
+                ? data.totalPage
+                : data.activePage
+            }
+            isScannedAll={
+              data.status === "scan-all" ||
+              data.totalPage - data.activePage === 0
+            }
           />
         )}
       </div>

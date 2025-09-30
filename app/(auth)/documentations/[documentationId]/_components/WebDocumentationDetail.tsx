@@ -9,6 +9,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import ToolTipButton from "@/components/ui/tooltip-button";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -34,10 +39,12 @@ export const WebDocumentationDetail = ({
   documentationId,
   activePage,
   totalPage,
+  isScannedAll,
 }: {
   documentationId: Id<"documentation">;
   activePage: number;
   totalPage: number;
+  isScannedAll: boolean;
 }) => {
   const customer = useCustomer();
   const [search, setSearch] = React.useState("");
@@ -70,10 +77,10 @@ export const WebDocumentationDetail = ({
     try {
       await startScrape({ documentationId, pageUrl: url, titleUrl: title });
       await decrement({ value: 1 });
-      toast.success("Scraping started successfully");
+      toast.success("Scan started successfully");
     } catch (e) {
       console.error(e);
-      toast.error("Failed to start scraping");
+      toast.error("Failed to start scan");
     }
   };
 
@@ -117,7 +124,6 @@ export const WebDocumentationDetail = ({
         toast.error("Failed to scan all pages");
       });
   };
-
   console.log(customer);
 
   const links: LinkType[] = useMemo(() => {
@@ -151,14 +157,15 @@ export const WebDocumentationDetail = ({
 
   return (
     <div className="pb-6">
-      <div className="mt-4 mb-2 flex items-center justify-between">
+      <div className="mt-4 mb-2 flex items-center justify-between min-h-16">
         <div>
-          <p className="text-sm ">Draft</p>
+          <p className="text-sm ">Pages</p>
           <p className="font-semibold">
             {activePage || 0} / {totalPage || 0} Scanned
           </p>
         </div>
-        {customer.customer?.features.documentation_limit ? (
+        {isScannedAll ? null : customer.customer?.features
+            .documentation_limit ? (
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
             <DialogTrigger asChild>
               <Button className="mt-4 mb-4" size="sm">
@@ -248,7 +255,15 @@ export const WebDocumentationDetail = ({
                   ) : scannedData?.status === "starting" ? (
                     <RiHourglassLine className="animate-spin" size={14} />
                   ) : scannedData?.status === "failed" ? (
-                    <RiErrorWarningLine size={16} className="text-red-500" />
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <RiErrorWarningLine
+                          size={16}
+                          className="text-red-500"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>Failed to scan</TooltipContent>
+                    </Tooltip>
                   ) : (
                     <RiCloseCircleLine
                       className="text-muted-foreground"
@@ -274,13 +289,17 @@ export const WebDocumentationDetail = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuLabel>
-                    {scannedData ? "Page scanned" : "Page not scanned"}
+                    {scannedData?.status === "failed"
+                      ? "Page failed to scan"
+                      : scannedData
+                        ? "Page scanned"
+                        : "Page not scanned"}
                   </DropdownMenuLabel>
                   {(!scannedData || scannedData.status === "failed") && (
                     <DropdownMenuItem
                       onClick={() => handleStartScrape(link.url, link.title)}
                     >
-                      Scan
+                      {scannedData?.status === "failed" ? "Re-scan" : "Scan"}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem

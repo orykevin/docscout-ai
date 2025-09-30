@@ -1,9 +1,9 @@
 import { action, internalAction } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { z } from "zod"
-import { generateObject } from 'ai';
+import { generateObject, generateText, streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { internal } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { embed } from 'ai';
 import { chunkPdfTextSimple } from "../utils/lib";
 
@@ -48,17 +48,24 @@ export const enhanceMarkdown = internalAction({
                     'Content-Type': 'application/json',
                     'X-Remove-Selector': 'header, footer, img, svg',
                     'X-Proxy': 'auto',
-                    'X-Respond-With': 'readerlm-v2'
+                    'X-Respond-With': 'readerlm-v2',
+                    'X-Timeout': "20"
                 },
                 body: JSON.stringify(data)
             };
 
             const response = await fetch('https://r.jina.ai/', options)
+            console.log("status response", response.status);
+
+            if (response.status !== 200) {
+                await ctx.runMutation(internal.v1.documentation.updateFailedScrapeWebData, { pageDocumentationId });
+                throw new ConvexError("Failed to scans");
+            }
+
             const text = await response.text();
-
-            await ctx.runAction(internal.v1.ai.chunkingMarkdown, { markdown: text, documentationId, pageDocumentationId })
-
+            await ctx.runAction(internal.v1.ai.chunkingMarkdown, { markdown: text, documentationId, pageDocumentationId });
             return text
+
         } catch (e) {
             console.log(e)
             await ctx.runMutation(internal.v1.documentation.updateFailedScrapeWebData, { pageDocumentationId })
@@ -214,4 +221,49 @@ export const embeddingFileDocumentation = internalAction({
             totalChunks: files.length
         })
     },
+})
+
+
+export const queryChat = action({
+    args: {
+        // documentationContext: v.array(v.id("documentation")),
+        documentationId: v.id("documentation"),
+        prompt: v.string()
+    },
+    handler: async (ctx, args) => {
+
+        const { embedding } = await embed({
+            model: openai.textEmbeddingModel("text-embedding-3-small"),
+            value: args.prompt
+        })
+
+        const results = await ctx.vectorSearch("pageDocumentationChunks", "byEmbedding", {
+            vector: embedding,
+            limit: 10,
+            filter: (q) => q.eq("documentationId", args.documentationId),
+        });
+
+        const pageDocumentationIds = results.filter((result) => result._score < 3.5).map(result => result._id);
+
+        const collectedContent = await ctx.runQuery(api.v1.documentation.getAllPageDocumentationChunksContent, { pageDocumentationIds });
+        const allContent = collectedContent.join("\n") as string
+
+        console.log(results);
+        console.log(collectedContent.join("\n"))
+
+        return allContent;
+
+        // const { textStream } = streamText({
+        //     model: openai("gpt-4o-mini-2024-07-18"),
+        //     system: "You are really good at coding and connect your existing skill and combined with new knowledge from given context",
+        //     prompt: `
+        //         CONTEXT : ${collectedContent.join("\n")}.
+        //         QUESTION: ${args.prompt}
+        //     `
+        // })
+
+        // for await (const textPart of textStream) {
+        //     console.log(textPart);
+        // }
+    }
 })

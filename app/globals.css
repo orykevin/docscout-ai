@@ -150,6 +150,27 @@
   h4 {
     @apply text-lg font-semibold;
   }
+  .markdown ul {
+    @apply list-disc pl-6;
+  }
+  .markdown p {
+    @apply my-1.5;
+  }
+  .markdown h1 {
+    @apply text-2xl font-semibold !mt-4 !mb-1;
+  }
+  .markdown h2 {
+    @apply text-xl font-semibold !mt-4 !mb-1;
+  }
+  .markdown h3 {
+    @apply text-lg font-semibold !mt-4 !mb-1;
+  }
+  .markdown h4 {
+    @apply text-base font-semibold;
+  }
+  .markdown pre {
+    @apply my-3;
+  }
 }
 
 :root {

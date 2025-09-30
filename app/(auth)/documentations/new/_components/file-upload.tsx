@@ -152,7 +152,7 @@ const FileUpload = () => {
   };
 
   return (
-    <div className="mt-4 max-w-2xl mx-auto">
+    <div className="mt-4 max-w-3xl mx-auto">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div className="flex-1">
           <Label htmlFor="name">Name</Label>

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sooner";
+import { ConvexQueryCacheProvider } from "convex-helpers/react/cache/provider";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -24,7 +25,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <ConvexClientProvider>
+            <ConvexQueryCacheProvider>{children}</ConvexQueryCacheProvider>
+          </ConvexClientProvider>
           <Toaster />
         </ThemeProvider>
       </body>
