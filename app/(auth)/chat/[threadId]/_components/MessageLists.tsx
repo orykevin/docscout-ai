@@ -56,7 +56,6 @@ function StreamingMessage({
 
   useEffect(() => {
     if (!isLastChat) return;
-    console.log("text Changes", text);
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [text, isLastChat]);
 

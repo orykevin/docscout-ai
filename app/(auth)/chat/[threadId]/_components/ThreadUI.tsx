@@ -6,11 +6,17 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useUserQuery } from "@/lib/convex-functions";
 import React from "react";
 import MessageLists from "./MessageLists";
+import { useRouter } from "next/navigation";
 
 const ThreadUI = ({ threadId }: { threadId: Id<"thread"> }) => {
+  const router = useRouter();
   const threadData = useUserQuery(api.v1.chat.getThreadData, { threadId });
 
-  console.log(threadData);
+  if (threadData === null) {
+    router.push("/chat");
+  }
+
+  if (!threadData) return null;
 
   return (
     <div className="max-w-3xl w-full mx-auto">
