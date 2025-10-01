@@ -8,6 +8,12 @@ import CTASection from "./_components/cta-section";
 import FooterSection from "./_components/footer";
 import { Header } from "./_components/header-section";
 
+export const metadata = {
+  title: "Introduction",
+  description:
+    "Docsout lets you collect documentation by scraping websites or uploading files, then chat with it using AI",
+};
+
 export default function HeroSection() {
   return (
     <>
