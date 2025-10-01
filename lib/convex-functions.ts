@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import type { OptionalRestArgsOrSkip, PaginatedQueryArgs, PaginatedQueryReference, UsePaginatedQueryReturnType } from "convex/react";
 import { getFunctionName } from "convex/server";
 import type { FunctionArgs, FunctionReference, FunctionReturnType } from "convex/server";
@@ -46,6 +46,45 @@ export const useConvexMutation = <
   );
 
   return { mutate, isPending };
+};
+
+export const useConvexAction = <
+  Action extends FunctionReference<"action">,
+>(
+  actionFunction: Action
+) => {
+  const [isPending, setIsPending] = useState(false);
+  const action = useAction(actionFunction);
+
+  const runAction = useCallback(
+    async (
+      values: FunctionArgs<Action>,
+      options?: {
+        onSuccess?: (res: FunctionReturnType<Action>) => void;
+        onError?: (error: { data: string }) => void;
+        onSettled?: () => void;
+        throwError?: boolean;
+      }
+    ): Promise<FunctionReturnType<Action> | undefined> => {
+      try {
+        setIsPending(true);
+        const response = await action(values);
+        options?.onSuccess?.(response);
+        return response;
+      } catch (error) {
+        options?.onError?.(error as { data: string });
+        if (options?.throwError) {
+          throw error;
+        }
+      } finally {
+        setIsPending(false);
+        options?.onSettled?.();
+      }
+    },
+    [action]
+  );
+
+  return { runAction, isPending };
 };
 
 export type PaginatedQueryState<T> = {

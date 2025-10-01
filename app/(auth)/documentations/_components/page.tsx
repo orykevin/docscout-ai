@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import LinkButton from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -37,6 +38,16 @@ const AllDocumentationList = () => {
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton className="min-h-[10rem]" key={i} />
         ))}
+      </div>
+    );
+
+  if (data.length === 0)
+    return (
+      <div className="w-full h-[50vh] flex flex-col items-center justify-center">
+        <h4>No documentation</h4>
+        <LinkButton href="/documentations/new" className="mt-6">
+          Add and scans new documentation
+        </LinkButton>
       </div>
     );
 

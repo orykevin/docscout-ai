@@ -150,7 +150,7 @@ const FileUpload = () => {
       <div className="flex items-end justify-between gap-4 mb-6">
         <div className="flex-1">
           <Label htmlFor="name">Name</Label>
-          <Input className="mt-2" name="name" ref={inputNameRef} />
+          <Input className="mt-2 border-muted" name="name" ref={inputNameRef} />
         </div>
         <Button
           onClick={handleSaveDocumentation}

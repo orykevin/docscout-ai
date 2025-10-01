@@ -258,6 +258,21 @@ export const reScanFileDocument = mutation({
     },
 })
 
+export const getAllFileDocumentationChunksContent = query({
+    args: {
+        fileDocumentationIds: v.array(v.id("fileDocumentationChunks"))
+    }, handler: async (ctx, { fileDocumentationIds }) => {
+        const collectedContent = await Promise.all(fileDocumentationIds.map(async (id) => {
+            const fileDocumentation = await ctx.db.get(id);
+            return fileDocumentation?.content
+        }));
+
+        const filteredContent = collectedContent.filter((content) => content !== undefined);
+
+        return filteredContent;
+    },
+})
+
 // web scrape documentation
 
 

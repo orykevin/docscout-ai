@@ -74,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar {...props} className=" !border-none">
       <div className="flex items-center gap-2 p-4">
         <DocuScoutIcon className="w-8 h-8" />
-        <p className="font-semibold text-lg">DocuScout AI</p>
+        <p className="font-semibold text-lg">DocScout AI</p>
       </div>
       <SidebarContent>
         <SidebarGroup>

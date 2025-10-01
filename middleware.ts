@@ -21,7 +21,7 @@ const getSession = async (request: NextRequest) => {
 };
 */
 
-const signInRoutes = ["/sign-in", "/sign-up", "/verify-2fa"];
+const signInRoutes = ["/sign-in", "/sign-up", "/verify-2fa", "/"];
 
 // Just check cookie, recommended approach
 export default async function middleware(request: NextRequest) {
@@ -39,7 +39,7 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
-  if (isSignInRoute || request.nextUrl.pathname === "/") {
+  if (isSignInRoute && sessionCookie) {
     return NextResponse.redirect(
       new URL("/chat", request.url),
     );

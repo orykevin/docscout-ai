@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { useConvexMutation } from "@/lib/convex-functions";
 import { useCustomer } from "autumn-js/react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const FileDocumentationDetail = ({
   documentationId,
@@ -87,7 +88,18 @@ const FileDocumentationDetail = ({
     }
   };
 
-  if (!filesData) return "Loading data...";
+  if (!filesData)
+    return (
+      <div>
+        <Skeleton className="h-10 w-28 mt-6" />
+        <Skeleton className="h-10 w-full my-3" />
+        <div className="space-y-2 mt-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton className="w-full h-12" key={i} />
+          ))}
+        </div>
+      </div>
+    );
 
   return (
     <div className="mt-3">
