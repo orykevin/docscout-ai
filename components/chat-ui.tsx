@@ -3,13 +3,12 @@
 import React from "react";
 import { Textarea } from "./ui/textarea";
 import ToolTipButton from "./ui/tooltip-button";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   RiArrowUpLine,
   RiCheckLine,
   RiCloseLine,
   RiGitRepositoryCommitsLine,
-  RiVoiceprintLine,
 } from "@remixicon/react";
 
 import {
@@ -17,13 +16,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
 } from "./ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useConvexMutation, useUserQuery } from "@/lib/convex-functions";
+import { useConvexAction, useUserQuery } from "@/lib/convex-functions";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Badge } from "./ui/badge";
 import { useRouter } from "next/navigation";
+import { useCustomer } from "autumn-js/react";
+import { toast } from "sonner";
+import LinkButton from "./ui/link-button";
+
+export const MAX_CONTEXT_FREE = 2;
+export const MAX_CONTEXT_PRO = 10;
 
 type ChatUIProps = {
   isFrontPage?: boolean;
@@ -37,6 +43,7 @@ const ChatUI = ({
   threadId,
 }: ChatUIProps) => {
   const router = useRouter();
+  const { customer } = useCustomer();
   const [selectedDoc, setSelectedDoc] = React.useState<Id<"documentation">[]>(
     defaultSelectedDocumentationIds || [],
   );
@@ -46,39 +53,91 @@ const ChatUI = ({
   const allDocumentationOption = useUserQuery(
     api.v1.documentation.getDocumentationOptions,
   );
-  const { mutate: createThread, isPending: isCreating } = useConvexMutation(
-    api.v1.chat.createThread,
+  const { runAction: createThread, isPending: isCreating } = useConvexAction(
+    api.v1.chat.createThreadAction,
   );
-  const { mutate: sendingChat, isPending: isSending } = useConvexMutation(
-    api.v1.chat.sendMessage,
+  const { runAction: sendingChat, isPending: isSending } = useConvexAction(
+    api.v1.chat.sendMessageAction,
   );
 
   const isDisabled = isCreating || isSending;
+  const isLoadingCustomer = !customer;
+  const isChatReachedLimit =
+    customer &&
+    !customer?.features?.chats?.unlimited &&
+    (customer?.features?.chats?.balance || 0) <= 0
+      ? true
+      : false;
 
-  const sendChat = () => {
+  const sendChat = async () => {
     const message = textAreaRef.current?.value;
-    console.log("message");
-    if (isCreating || !message || message.trim() === "") return;
+    if (
+      isCreating ||
+      !message ||
+      message.trim() === "" ||
+      isLoadingCustomer ||
+      isChatReachedLimit
+    )
+      return;
 
-    console.log("submited");
     if (isFrontPage) {
       //create thread
-      createThread({
-        documentationIds: selectedDoc,
-        message,
-      }).then((threadId) => {
-        router.push(`/chat/${threadId}`);
-      });
+      createThread(
+        {
+          documentationIds: selectedDoc,
+          message,
+        },
+        {
+          onSuccess: (threadId) => {
+            router.push(`/chat/${threadId}`);
+          },
+          onError: (e) => {
+            console.log("chat error", e);
+            toast.error(e.data);
+          },
+        },
+      );
     } else {
       //ai chat
       if (!threadId) return;
-      sendingChat({
-        threadId,
-        content: message,
-        documentationIds: selectedDoc,
-      });
+      sendingChat(
+        {
+          threadId,
+          content: message,
+          documentationIds: selectedDoc,
+        },
+        {
+          onSuccess: () => {
+            formRef.current?.reset();
+          },
+          onError: (e) => {
+            console.log("chat error", e);
+            toast.error(e.data);
+          },
+        },
+      );
+
       textAreaRef.current!.value = "";
     }
+  };
+
+  const selectDocumentation = (id: Id<"documentation">) => {
+    if (
+      (!customer || !customer.features.documentation_limit) &&
+      selectedDoc.length >= MAX_CONTEXT_FREE
+    ) {
+      toast.error("You have reached the maximum number of context");
+      return;
+    }
+    if (
+      customer?.features.documentation_limit &&
+      selectedDoc.length >= MAX_CONTEXT_PRO
+    ) {
+      toast.error("You have reached the maximum number of context");
+      return;
+    }
+
+    setSelectedDoc((prev) => [...prev, id]);
   };
 
   const submitHandler = (e: React.FormEvent) => {
@@ -98,7 +157,11 @@ const ChatUI = ({
             "peer !h-max max-h-[50vh] text-base field-sizing-content resize-none bg-transparent !ring-0 !border-0 p-0 ",
             !isFrontPage && "!min-h-8 h-8",
           )}
-          placeholder="Ask a question..."
+          placeholder={
+            isChatReachedLimit
+              ? "You've reached your daily chat limit. "
+              : "Ask a question..."
+          }
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -106,6 +169,7 @@ const ChatUI = ({
             }
           }}
           ref={textAreaRef}
+          disabled={isDisabled || isChatReachedLimit}
         ></Textarea>
         <div className="flex items-end justify-between w-full pt-2">
           <div className="flex gap-2 items-end">
@@ -120,6 +184,19 @@ const ChatUI = ({
                 </ToolTipButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
+                <DropdownMenuLabel>
+                  Selected : {selectedDoc.length} /{" "}
+                  {customer?.features.documentation_limit
+                    ? MAX_CONTEXT_PRO
+                    : MAX_CONTEXT_FREE}
+                </DropdownMenuLabel>
+                {allDocumentationOption?.length === 0 && (
+                  <DropdownMenuItem asChild>
+                    <LinkButton href="/documentations/new">
+                      Add new Documentation
+                    </LinkButton>
+                  </DropdownMenuItem>
+                )}
                 {allDocumentationOption &&
                   allDocumentationOption.map((doc) => {
                     const checked = selectedDoc.includes(doc.id);
@@ -127,27 +204,26 @@ const ChatUI = ({
                       <DropdownMenuItem
                         key={doc.id}
                         onSelect={(e) => e.preventDefault()}
-                        onClick={() =>
-                          setSelectedDoc((prev) => [...prev, doc.id])
-                        }
+                        onClick={() => selectDocumentation(doc.id)}
                         disabled={checked}
                       >
+                        <Badge>{doc.type}</Badge>
+
                         {checked && <RiCheckLine />}
                         <span>{doc.name}</span>
-                        <Badge>{doc.type}</Badge>
                       </DropdownMenuItem>
                     );
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <ToolTipButton
+            {/* <ToolTipButton
               className="w-8 h-8 min-w-8 min-h-8"
               size="icon"
               tooltip="More"
               variant="outline"
             >
               {<Plus />}
-            </ToolTipButton>
+            </ToolTipButton> */}
             <div className="flex flex-wrap gap-1 max-w-full">
               {selectedDoc.map((doc) => {
                 const docData = allDocumentationOption?.find(
@@ -174,19 +250,19 @@ const ChatUI = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <ToolTipButton
+            {/* <ToolTipButton
               className=" w-8 h-8"
               size="icon"
               tooltip="Voice"
               variant="ghost"
             >
               {<RiVoiceprintLine />}
-            </ToolTipButton>
+            </ToolTipButton> */}
             <ToolTipButton
               className=" w-8 h-8 group-has-[textarea:placeholder-shown]:disabled"
               size="icon"
               tooltip="Send"
-              disabled={isDisabled}
+              disabled={isDisabled || isLoadingCustomer || isChatReachedLimit}
               onClick={sendChat}
             >
               {isDisabled ? (

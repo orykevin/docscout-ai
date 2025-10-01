@@ -9,6 +9,7 @@ import { paginationOptsValidator } from "convex/server";
 import { Doc, Id } from "../_generated/dataModel";
 import { openai } from "@ai-sdk/openai";
 import { embed, generateText, streamText } from 'ai';
+import { autumn } from "../autumn";
 
 const persistentTextStreaming = new PersistentTextStreaming(
     components.persistentTextStreaming
@@ -99,12 +100,66 @@ export const getMessagesInternal = query({
     },
 });
 
-export const createThread = mutation({
+export const createThreadAction = action({
     args: { message: v.string(), documentationIds: v.array(v.id("documentation")) },
-    handler: async (ctx, args) => {
+    handler: async (ctx, { message, documentationIds }) => {
         const user = await ctx.auth.getUserIdentity();
-        if (!user) throw new Error("Not authenticated");
-        const userId = user.subject
+        if (!user) throw new ConvexError("Unauthenticated");
+
+        const { data: chat } = await autumn.check(ctx, { featureId: "chats" })
+        if (!chat?.unlimited && (chat?.balance || 0) <= 0) {
+            throw new ConvexError("You've reached your daily chat limit.")
+        }
+
+        await autumn.track(ctx, {
+            featureId: "chats",
+            value: 1
+        })
+
+        const threadId: Id<"thread"> = await ctx.runMutation(api.v1.chat.createThread, {
+            userId: user.subject,
+            message,
+            documentationIds
+        })
+
+        return threadId;
+    },
+});
+
+export const sendMessageAction = action({
+    args: {
+        threadId: v.id("thread"),
+        content: v.string(),
+        documentationIds: v.optional(v.array(v.id("documentation"))),
+    },
+    handler: async (ctx, { threadId, content, documentationIds }) => {
+        const user = await ctx.auth.getUserIdentity();
+        if (!user) throw new ConvexError("Unauthenticated");
+
+        const { data: chat } = await autumn.check(ctx, { featureId: "chats" })
+        if (!chat?.unlimited && (chat?.balance || 0) <= 0) {
+            throw new ConvexError("You've reached your daily chat limit.")
+        }
+
+        await autumn.track(ctx, {
+            featureId: "chats",
+            value: 1
+        })
+
+        await ctx.runMutation(api.v1.chat.sendMessage, {
+            userId: user.subject,
+            threadId,
+            content,
+            documentationIds
+        })
+
+        return true;
+    },
+})
+
+export const createThread = mutation({
+    args: { userId: v.string(), message: v.string(), documentationIds: v.array(v.id("documentation")) },
+    handler: async (ctx, { userId, ...args }) => {
 
         const threadId = await ctx.db.insert("thread", {
             userId,
@@ -115,6 +170,7 @@ export const createThread = mutation({
         await ctx.scheduler.runAfter(0, api.v1.chat.generateThreadTitle, { message: args.message, threadId });
 
         await ctx.runMutation(api.v1.chat.sendMessage, {
+            userId,
             threadId,
             content: args.message,
         })
@@ -125,14 +181,12 @@ export const createThread = mutation({
 
 export const sendMessage = mutation({
     args: {
+        userId: v.string(),
         threadId: v.id("thread"),
         content: v.string(),
         documentationIds: v.optional(v.array(v.id("documentation"))),
     },
-    handler: async (ctx, args) => {
-        const user = await ctx.auth.getUserIdentity();
-        if (!user) throw new Error("Not authenticated");
-        const userId = user.subject
+    handler: async (ctx, { userId, ...args }) => {
 
         const thread = await ctx.db.get(args.threadId);
         if (!thread || thread.userId !== userId) {
@@ -322,32 +376,55 @@ const aiChatHandler = async (ctx: ActionCtx, chunkAppender: any, args: { userMes
 
     const thread = await ctx.runQuery(api.v1.chat.getThreadById, { threadId: args.threadId });
 
-    const { embedding } = await embed({
-        model: openai.textEmbeddingModel("text-embedding-3-small"),
-        value: args.userMessage
-    })
+    const allDocumentation = thread.selectedDocumentation ? await Promise.all(thread.selectedDocumentation?.map(async (documentationId) => {
+        return await ctx.runQuery(api.v1.documentation.getDocumentation, { documentationId }) || null
+    })) : null
 
-    const results = await ctx.vectorSearch("pageDocumentationChunks", "byEmbedding", {
-        vector: embedding,
-        limit: 10,
-        filter: (q) => q.or(
-            ...(thread.selectedDocumentation || []).map(id => q.eq("documentationId", id))
-        )
-    });
+    let allContent: string[] = []
 
-    const pageDocumentationIds = results.filter((result) => result._score < 3.5).map(result => result._id);
+    if (allDocumentation && allDocumentation.filter((doc) => doc).length > 0) {
+        const { embedding } = await embed({
+            model: openai.textEmbeddingModel("text-embedding-3-small"),
+            value: args.userMessage
+        })
 
-    const collectedContent = await ctx.runQuery(api.v1.documentation.getAllPageDocumentationChunksContent, { pageDocumentationIds });
-    const allContent = collectedContent.join("\n") as string
+        const allPageDocumentation = allDocumentation.filter((doc) => doc.type === "web").map(page => page._id)
+        const allFileDocumentation = allDocumentation.filter((doc) => doc.type === "files").map(file => file._id)
 
-    console.log(results);
-    console.log(collectedContent.join("\n"))
+        if (allPageDocumentation.length > 0) {
+            const pageResults = await ctx.vectorSearch("pageDocumentationChunks", "byEmbedding", {
+                vector: embedding,
+                limit: 10,
+                filter: (q) => q.or(
+                    ...(allPageDocumentation).map(id => q.eq("documentationId", id))
+                )
+            })
+            console.log("vectorSearch page documentation", pageResults)
+            const pageDocumentationIds = pageResults.filter((result) => result._score < 3.5).map(result => result._id);
+            const collectedContent = await ctx.runQuery(api.v1.documentation.getAllPageDocumentationChunksContent, { pageDocumentationIds });
+            allContent.push(...collectedContent)
+        }
+
+        if (allFileDocumentation.length > 0) {
+            const fileResults = await ctx.vectorSearch("fileDocumentationChunks", "byEmbedding", {
+                vector: embedding,
+                limit: 10,
+                filter: (q) => q.or(
+                    ...(allFileDocumentation).map(id => q.eq("documentationId", id))
+                )
+            })
+            console.log("vectorSearch page documentation", fileResults)
+            const fileDocumentationIds = fileResults.filter((result) => result._score < 3.5).map(result => result._id);
+            const collectedContent = await ctx.runQuery(api.v1.documentation.getAllFileDocumentationChunksContent, { fileDocumentationIds });
+            allContent.push(...collectedContent)
+        }
+    }
 
     const { textStream } = streamText({
         model: openai("gpt-4o-mini-2024-07-18"),
         system: "You are really good at coding and connect your existing skill and combined with new knowledge from given context",
         prompt: `
-                CONTEXT : ${allContent}.
+                CONTEXT : ${allContent.join("\n")}.
                 HISTORY : ${args.messages}.
                 QUESTION: ${args.userMessage}.
             `
