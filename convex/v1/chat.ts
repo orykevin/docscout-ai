@@ -38,8 +38,7 @@ export const getThreadData = query({
         const userId = await isAuthenticated(ctx);
         const thread = await ctx.db.get(threadId);
 
-        if (!thread) throw new ConvexError("Thread not found");
-        if (thread.userId !== userId) throw new ConvexError("You are not thread owner")
+        if (!thread || thread.userId !== userId) return null
 
         return thread
     },
