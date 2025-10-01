@@ -3,7 +3,7 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { useConvexMutation, useUserQuery } from "@/lib/convex-functions";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "./ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "./ui/button";
@@ -12,6 +12,7 @@ import DialogBase from "./dialog-base";
 import { toast } from "sonner";
 
 const ThreadListSidebar = () => {
+  const router = useRouter();
   const threadList = useUserQuery(api.v1.chat.getThreadList);
   const pathname = usePathname();
   const paths = pathname.split("/");
@@ -25,6 +26,9 @@ const ThreadListSidebar = () => {
     if (selectedThreadId) {
       mutate({ threadId: selectedThreadId }).then(() => {
         setSelectedThreadId(null);
+        if (selectedThreadId === paths[2]) {
+          router.push("/chat");
+        }
         toast.success("Thread deleted");
       });
     }

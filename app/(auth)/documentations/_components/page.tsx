@@ -19,7 +19,6 @@ import {
 import { api } from "@/convex/_generated/api";
 import { useUserQuery } from "@/lib/convex-functions";
 import {
-  RiDeleteBinLine,
   RiFileCheckLine,
   RiFileCopy2Line,
   RiFileHistoryLine,
@@ -27,9 +26,11 @@ import {
   RiPencilLine,
 } from "@remixicon/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 const AllDocumentationList = () => {
+  const router = useRouter();
   const data = useUserQuery(api.v1.documentation.getAllDocumentation);
   console.log(data);
   if (!data)
@@ -53,7 +54,7 @@ const AllDocumentationList = () => {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 pb-8">
         {data.map((doc) => {
           const leftPage = doc.totalPage - doc.activePage;
           const dateFrom = new Date(doc._creationTime).toDateString();
@@ -73,13 +74,11 @@ const AllDocumentationList = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => router.push(`/documentations/${doc._id}`)}
+                    >
                       <RiPencilLine />
                       Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <RiDeleteBinLine />
-                      Remove
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

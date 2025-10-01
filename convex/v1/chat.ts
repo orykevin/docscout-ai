@@ -421,7 +421,7 @@ const aiChatHandler = async (ctx: ActionCtx, chunkAppender: any, args: { userMes
     }
 
     const { textStream } = streamText({
-        model: openai("gpt-4o-mini-2024-07-18"),
+        model: openai("gpt-4o-mini"),
         system: "You are really good at coding and connect your existing skill and combined with new knowledge from given context",
         prompt: `
                 CONTEXT : ${allContent.join("\n")}.
@@ -460,7 +460,7 @@ export const generateThreadTitle = action({
         message: v.string()
     }, handler: async (ctx, args) => {
         const { text } = await generateText({
-            model: openai("gpt-4o-mini-2024-07-18"),
+            model: openai("gpt-4o-mini"),
             system: "You are an AI that generates concise, invormative thread titles based on a given prompt. Always respond with only the title, without explanations or extra text. DO Not exceeding 50 Characters",
             prompt: "Please generate short title for this prompt from user : " + args.message
         })
