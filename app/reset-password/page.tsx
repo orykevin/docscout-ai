@@ -11,18 +11,26 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useSearchParams } from "next/navigation";
 import { redirect } from "next/navigation";
 
 export default function ResetPassword() {
+  return (
+    <Suspense>
+      <Component />
+    </Suspense>
+  );
+}
+
+const Component = () => {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,4 +153,4 @@ export default function ResetPassword() {
       </Card>
     </div>
   );
-}
+};

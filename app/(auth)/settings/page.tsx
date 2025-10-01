@@ -2,13 +2,12 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TwoFactorTab from "./_components/TwoFactorTab";
-import { PricingTable } from "autumn-js/react";
 import BillingTab from "./_components/BillingTab";
 
 export default function SettingsPage() {
   return (
     <div className="min-h-screen w-full flex justify-center p-4">
-      <Tabs className="w-full mx-auto max-w-5xl">
+      <Tabs className="w-full mx-auto max-w-5xl" defaultValue="billing">
         <TabsList>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="two-factor">Two Factor</TabsTrigger>

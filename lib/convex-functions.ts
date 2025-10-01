@@ -1,12 +1,12 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useMutation } from "convex/react";
-import type { PaginatedQueryArgs, PaginatedQueryReference, UsePaginatedQueryReturnType } from "convex/react";
+import type { OptionalRestArgsOrSkip, PaginatedQueryArgs, PaginatedQueryReference, UsePaginatedQueryReturnType } from "convex/react";
 import { getFunctionName } from "convex/server";
 import type { FunctionArgs, FunctionReference, FunctionReturnType } from "convex/server";
 import { ConvexQueryCacheContext } from "convex-helpers/react/cache/provider";
-import { useQueries } from "convex-helpers/react/cache/hooks";
+import { useQueries, useQuery } from "convex-helpers/react/cache/hooks";
 import type { ClientApi } from "@convex-dev/r2";
-import { api as convexApi } from "@/convex/_generated/api";
+import { api, api as convexApi } from "@/convex/_generated/api";
 import { fetchWithUploadProgress, type OnUploadProgressCallback } from "./fetch";
 
 export const useConvexMutation = <
@@ -71,7 +71,7 @@ export function usePaginateCacheQuery<Query extends PaginatedQueryReference>(
 
   const context = useContext(ConvexQueryCacheContext);
   const queriesData = useMemo(() => {
-    let queries: any = {};
+    const queries: any = {};
     if (args === "skip") {
       return queries;
     } else {
@@ -153,7 +153,7 @@ export function usePaginateCacheQuery<Query extends PaginatedQueryReference>(
       // }
 
       let key: string = "";
-      let keys: string[] = [];
+      const keys: string[] = [];
       if (args !== "skip" && argsKey.length > 0) {
         argsKey.forEach((arg) => {
           const argKey = arg as keyof PaginatedQueryArgs<Query>;
@@ -260,4 +260,15 @@ export function useConvexUploadFile(
     uploading,
     error
   }
+
+}
+
+export function useUserQuery<Query extends FunctionReference<"query">>(
+  query: Query,
+  ...queryArgs: OptionalRestArgsOrSkip<Query>
+): FunctionReturnType<Query> | undefined {
+  const user = useQuery(api.auth.getCurrentUser);
+  const data = useQuery(query, user ? queryArgs[0] || {} : "skip")
+
+  return data
 }

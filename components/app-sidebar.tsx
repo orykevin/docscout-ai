@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-import { TeamSwitcher } from "@/components/team-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -10,23 +9,15 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import {
-  RiChat1Line,
-  RiBardLine,
-  RiSettings3Line,
-  RiBook3Fill,
-  RiBook2Line,
-  RiHome4Line,
-} from "@remixicon/react";
-import { BookOpen } from "lucide-react";
+import { RiSettings3Line, RiBook2Line, RiChatNewLine } from "@remixicon/react";
 import DocuScoutIcon from "./icons/docuscout-icon";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import ThreadListSidebar from "./thread-list-sidebar";
 
 // This is sample data.
 const data = {
@@ -50,9 +41,9 @@ const data = {
       url: "#",
       items: [
         {
-          title: "Home",
-          url: "/overview",
-          icon: RiHome4Line,
+          title: "New Chat",
+          url: "/chat",
+          icon: RiChatNewLine,
         },
         {
           title: "Documentations",
@@ -65,11 +56,6 @@ const data = {
       title: "More",
       url: "#",
       items: [
-        {
-          title: "Documentation Lists",
-          url: "#",
-          icon: BookOpen,
-        },
         {
           title: "Settings",
           url: "/settings",
@@ -91,7 +77,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <p className="font-semibold text-lg">DocuScout AI</p>
       </div>
       <SidebarContent>
-        {/* We only show the first parent group */}
         <SidebarGroup>
           <SidebarGroupLabel className="uppercase px-1">
             {data.navMain[0]?.title}
@@ -99,13 +84,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupContent>
             <SidebarMenu>
               {data.navMain[0]?.items.map((item) => {
-                const isSelected = paths[1] === item.url.replace("/", "");
+                const isNewChat =
+                  paths.length === 2 &&
+                  paths[1] === "chat" &&
+                  item.url === "/chat";
+                const isDocumentation =
+                  paths[1] === item.url.replace("/", "") &&
+                  item.url === "/documentations";
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
                       className="group/menu-button font-medium gap-3 h-9 rounded-md data-[active=true]:hover:opacity-95 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-[0_1px_2px_0_rgb(0_0_0/.05),inset_0_1px_0_0_rgb(255_255_255/.12)] [&>svg]:size-auto"
-                      isActive={isSelected}
+                      isActive={isDocumentation || isNewChat}
                     >
                       <Link href={item.url}>
                         {item.icon && (
@@ -129,21 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             Chats
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  className="group/menu-button font-medium gap-3 h-9 rounded-md data-[active=true]:hover:opacity-95 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-[0_1px_2px_0_rgb(0_0_0/.05),inset_0_1px_0_0_rgb(255_255_255/.12)] [&>svg]:size-auto"
-                >
-                  <Link href={"google.com"}>
-                    <span className="truncate overflow-hidden text-ellipsis max-w-[220px]">
-                      How to center the div in this application please, how to
-                      fix it pleasee
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <ThreadListSidebar />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
@@ -158,7 +135,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     asChild
                     className="group/menu-button font-medium gap-3 h-9 rounded-md [&>svg]:size-auto"
                   >
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       {item.icon && (
                         <item.icon
                           className="text-sidebar-foreground/50 group-data-[active=true]/menu-button:text-primary"
@@ -167,7 +144,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         />
                       )}
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
