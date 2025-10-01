@@ -83,7 +83,7 @@ export const chunkingMarkdown = internalAction({
     handler: async (ctx, { documentationId, pageDocumentationId, markdown }) => {
         try {
             const { object } = await generateObject({
-                model: openai("gpt-4o-mini-2024-07-18"),
+                model: openai("gpt-4o-mini"),
                 schema: z.object({
                     sections: z.array(z.object({
                         heading: z.string(),
