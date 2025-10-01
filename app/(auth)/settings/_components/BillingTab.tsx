@@ -23,8 +23,6 @@ const BillingTab = () => {
     });
   };
 
-  console.log(customer);
-  console.log(products);
   return (
     <div className="w-full">
       <div className="flex gap-3 w-full">
@@ -38,7 +36,7 @@ const BillingTab = () => {
           const isSelected = activeProduct?.id === product.id;
           const isFree = product.properties.is_free;
           return (
-            <Card className="flex-1 w-full p-3 gap-1">
+            <Card className="flex-1 w-full p-3 gap-1" key={product.id}>
               <p className="text-lg">{product.name}</p>
               <p className="text-xl font-semibold">
                 {product.properties.is_free

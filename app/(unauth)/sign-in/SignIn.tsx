@@ -201,7 +201,7 @@ export default function SignIn() {
           },
           onSuccess: () => {
             setOtpLoading(false);
-            router.push("/dashboard/client-only");
+            router.push("/chat");
           },
           onError: (ctx) => {
             setOtpLoading(false);

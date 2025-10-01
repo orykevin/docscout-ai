@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-import { TeamSwitcher } from "@/components/team-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -10,21 +9,11 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import {
-  RiChat1Line,
-  RiBardLine,
-  RiSettings3Line,
-  RiBook3Fill,
-  RiBook2Line,
-  RiHome4Line,
-  RiChatNewLine,
-} from "@remixicon/react";
-import { BookOpen } from "lucide-react";
+import { RiSettings3Line, RiBook2Line, RiChatNewLine } from "@remixicon/react";
 import DocuScoutIcon from "./icons/docuscout-icon";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -88,7 +77,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <p className="font-semibold text-lg">DocuScout AI</p>
       </div>
       <SidebarContent>
-        {/* We only show the first parent group */}
         <SidebarGroup>
           <SidebarGroupLabel className="uppercase px-1">
             {data.navMain[0]?.title}

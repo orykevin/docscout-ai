@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Textarea } from "./ui/textarea";
 import ToolTipButton from "./ui/tooltip-button";
 import { Loader2, Plus } from "lucide-react";
 import {
   RiArrowUpLine,
   RiCheckLine,
-  RiCloseCircleLine,
   RiCloseLine,
-  RiGitRepositoryCommitsFill,
   RiGitRepositoryCommitsLine,
   RiVoiceprintLine,
 } from "@remixicon/react";
@@ -157,7 +155,10 @@ const ChatUI = ({
                 );
                 if (!docData) return null;
                 return (
-                  <div className="h-8 w-max max-w-40 p-2 flex items-center gap-2 bg-input rounded-md text-sm">
+                  <div
+                    className="h-8 w-max max-w-40 p-2 flex items-center gap-2 bg-input rounded-md text-sm"
+                    key={doc}
+                  >
                     <RiCloseLine
                       onClick={() =>
                         setSelectedDoc((prev) =>

@@ -390,7 +390,7 @@ export const generateThreadTitle = action({
 
         await ctx.runMutation(api.v1.chat.updateThreadTitle, {
             threadId: args.threadId,
-            title: text || "New Chat"
+            title: text?.replace(`"`, "") || "New Chat"
         })
     }
 })

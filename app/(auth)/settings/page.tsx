@@ -2,7 +2,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TwoFactorTab from "./_components/TwoFactorTab";
-import { PricingTable } from "autumn-js/react";
 import BillingTab from "./_components/BillingTab";
 
 export default function SettingsPage() {

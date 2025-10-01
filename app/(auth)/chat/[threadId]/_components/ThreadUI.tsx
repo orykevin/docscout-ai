@@ -3,7 +3,7 @@
 import ChatUI from "@/components/chat-ui";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { usePaginateCacheQuery, useUserQuery } from "@/lib/convex-functions";
+import { useUserQuery } from "@/lib/convex-functions";
 import React from "react";
 import MessageLists from "./MessageLists";
 

@@ -1,27 +1,20 @@
 "use client";
 
-import DialogBase from "@/components/dialog-base";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import {
-  RiAddLine,
-  RiArrowLeftLine,
-  RiCheckLine,
-  RiPencilLine,
-} from "@remixicon/react";
+import { RiArrowLeftLine, RiCheckLine, RiPencilLine } from "@remixicon/react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import React, { useEffect } from "react";
+import React from "react";
 import FileDocumentationDetail from "./FileDocumentationDetail";
 import { Input } from "@/components/ui/input";
 import { useConvexMutation } from "@/lib/convex-functions";
 import { Loader2 } from "lucide-react";
 import AddFileDialog from "./AddFileDialog";
 import { WebDocumentationDetail } from "./WebDocumentationDetail";
-import { useCustomer } from "autumn-js/react";
 
 const DocumentationDetail = ({
   documentationId,

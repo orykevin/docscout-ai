@@ -71,7 +71,7 @@ export function usePaginateCacheQuery<Query extends PaginatedQueryReference>(
 
   const context = useContext(ConvexQueryCacheContext);
   const queriesData = useMemo(() => {
-    let queries: any = {};
+    const queries: any = {};
     if (args === "skip") {
       return queries;
     } else {
@@ -153,7 +153,7 @@ export function usePaginateCacheQuery<Query extends PaginatedQueryReference>(
       // }
 
       let key: string = "";
-      let keys: string[] = [];
+      const keys: string[] = [];
       if (args !== "skip" && argsKey.length > 0) {
         argsKey.forEach((arg) => {
           const argKey = arg as keyof PaginatedQueryArgs<Query>;

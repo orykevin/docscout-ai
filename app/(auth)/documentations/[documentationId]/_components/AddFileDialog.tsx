@@ -10,7 +10,7 @@ import {
   RiFileWordLine,
   RiMarkdownLine,
 } from "@remixicon/react";
-import React, { use, useCallback } from "react";
+import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import type { FileItem } from "../../new/_components/file-upload";
 import { api } from "@/convex/_generated/api";
@@ -91,18 +91,11 @@ const AddFileDialog = ({
     console.log(filtered);
   }, []);
 
-  const {
-    getRootProps,
-    getInputProps,
-    isDragActive,
-    isDragAccept,
-    isDragReject,
-  } = useDropzone({
-    onDrop,
-    maxSize: 1 * 1024 * 1024,
-  });
-
-  console.log(customer);
+  const { getRootProps, getInputProps, isDragActive, isDragReject } =
+    useDropzone({
+      onDrop,
+      maxSize: 1 * 1024 * 1024,
+    });
 
   const handleSaveUploadedFile = () => {
     if (!customer) return;
@@ -181,7 +174,10 @@ const AddFileDialog = ({
               const fileData = file.file;
               const ext = fileData.name.split(".").pop();
               return (
-                <div className="bg-card flex items-center justify-between p-4 rounded-md">
+                <div
+                  className="bg-card flex items-center justify-between p-4 rounded-md"
+                  key={file.id}
+                >
                   <div className="flex gap-4 items-center w-full">
                     {ext === "md" ? (
                       <RiMarkdownLine size={32} />

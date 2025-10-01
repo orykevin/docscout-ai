@@ -8,7 +8,8 @@
     "dev:backend": "convex dev --typecheck-components --live-component-sources",
     "dev:frontend": "next dev",
     "generate": "convex dev --once --typecheck-components",
-    "lint": "next lint && tsc -p convex && eslint convex"
+    "lint": "next lint && tsc -p convex && eslint convex",
+    "build": "next build"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.35",

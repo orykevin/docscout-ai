@@ -2,7 +2,6 @@
 
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { usePaginateCacheQuery } from "@/lib/convex-functions";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { usePaginatedQuery } from "convex/react";
 import React, { useEffect, useRef } from "react";
@@ -25,10 +24,6 @@ interface Message {
   streamId?: string;
   isStreaming?: boolean;
   _creationTime: number;
-}
-
-interface MessageListProps {
-  messages: Message[];
 }
 
 function StreamingMessage({
@@ -63,7 +58,7 @@ function StreamingMessage({
     if (!isLastChat) return;
     console.log("text Changes", text);
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [text]);
+  }, [text, isLastChat]);
 
   return (
     <div>
@@ -90,12 +85,11 @@ const MessageLists = ({ threadId }: MessageListsProps) => {
 
   const {
     results: paginateData,
-    isLoading,
-    status,
+    // isLoading,
+    // status,
   } = usePaginatedQuery(api.v1.chat.getMessages, user ? { threadId } : "skip", {
     initialNumItems: 15,
   });
-  console.log(paginateData);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
@@ -110,7 +104,7 @@ const MessageLists = ({ threadId }: MessageListsProps) => {
 
           if (isAssistant)
             return (
-              <div>
+              <div key={message._id}>
                 {message.role === "assistant" && message.streamId ? (
                   <StreamingMessage
                     key={message._id}
@@ -118,7 +112,10 @@ const MessageLists = ({ threadId }: MessageListsProps) => {
                     isLastChat={isLastChat}
                   />
                 ) : (
-                  <div className="whitespace-pre-wrap break-words">
+                  <div
+                    key={message._id}
+                    className="whitespace-pre-wrap break-words"
+                  >
                     {message.content}
                   </div>
                 )}
@@ -148,7 +145,10 @@ const MessageLists = ({ threadId }: MessageListsProps) => {
             );
           else
             return (
-              <div className="p-2 px-4 w-max max-w-[90%] bg-muted rounded-md text-right ml-auto">
+              <div
+                className="p-2 px-4 w-max max-w-[90%] bg-muted rounded-md text-right ml-auto"
+                key={message._id}
+              >
                 <p>{message.content}</p>
               </div>
             );

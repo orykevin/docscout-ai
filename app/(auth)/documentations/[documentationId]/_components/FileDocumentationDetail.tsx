@@ -23,7 +23,7 @@ import React from "react";
 
 import { formatBytes } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
-import { useAction, useConvex, useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import DialogBase from "@/components/dialog-base";
 import { Button } from "@/components/ui/button";
@@ -95,7 +95,10 @@ const FileDocumentationDetail = ({
         {filesData?.map((file) => {
           const ext = file.fileName.split(".").pop();
           return (
-            <div className="bg-card flex items-center justify-between p-4 rounded-md">
+            <div
+              className="bg-card flex items-center justify-between p-4 rounded-md"
+              key={file._id}
+            >
               <div className="flex gap-4 items-center w-full">
                 {ext === "md" ? (
                   <RiMarkdownLine size={32} />

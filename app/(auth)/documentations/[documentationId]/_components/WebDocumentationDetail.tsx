@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +24,7 @@ import { useConvexMutation } from "@/lib/convex-functions";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import {
   RiCheckboxCircleFill,
+  RiCheckLine,
   RiCloseCircleLine,
   RiErrorWarningLine,
   RiFilter2Line,
@@ -32,7 +34,7 @@ import {
 } from "@remixicon/react";
 import { CheckoutDialog, useCustomer } from "autumn-js/react";
 import { useAction, useQuery } from "convex/react";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export const WebDocumentationDetail = ({
@@ -52,6 +54,7 @@ export const WebDocumentationDetail = ({
   const debounceText = useDebounce(search, 250);
   const [selectedLink, setSelectedLink] = React.useState<null | string>(null);
   const [openDialog, setOpenDialog] = React.useState(false);
+  const [filter, setFilter] = useState({ scanned: true, unscanned: true });
 
   const data = useQuery(api.v1.documentation.getWebInfoData, {
     documentationId,
@@ -124,7 +127,6 @@ export const WebDocumentationDetail = ({
         toast.error("Failed to scan all pages");
       });
   };
-  console.log(customer);
 
   const links: LinkType[] = useMemo(() => {
     return data?.webLinks.links
@@ -137,6 +139,13 @@ export const WebDocumentationDetail = ({
         })
       : [];
   }, [data]);
+
+  const handleSelectFilter = (type: "scanned" | "unscanned") => {
+    setFilter((prev) => ({
+      ...prev,
+      [type]: !prev[type],
+    }));
+  };
 
   useEffect(() => {
     if (debounceText && data?.webLinks.links) {
@@ -153,7 +162,18 @@ export const WebDocumentationDetail = ({
     }
   }, [debounceText, links]);
 
-  if (!data) return <div>Loading...</div>;
+  if (!data)
+    return (
+      <div>
+        <Skeleton className="h-10 w-28 mt-6" />
+        <Skeleton className="h-10 w-full my-3" />
+        <div className="space-y-2 mt-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton className="w-full h-12" key={i} />
+          ))}
+        </div>
+      </div>
+    );
 
   return (
     <div className="pb-6">
@@ -237,8 +257,28 @@ export const WebDocumentationDetail = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>Filter</DropdownMenuLabel>
-              <DropdownMenuItem>Scanned</DropdownMenuItem>
-              <DropdownMenuItem>Unscanned</DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                onClick={() => handleSelectFilter("scanned")}
+              >
+                {filter.scanned ? (
+                  <RiCheckLine size={16} />
+                ) : (
+                  <span className="min-w-4" />
+                )}{" "}
+                Scanned
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                onClick={() => handleSelectFilter("unscanned")}
+              >
+                {filter.unscanned ? (
+                  <RiCheckLine size={16} />
+                ) : (
+                  <span className="min-w-4" />
+                )}{" "}
+                Unscanned
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -246,8 +286,14 @@ export const WebDocumentationDetail = ({
       <div className="space-y-2">
         {(searchApplied || links).map((link) => {
           const scannedData = allPages?.find((page) => page.url === link.url);
+          const isScanned = scannedData?.status === "completed";
+          if (!filter.unscanned && !isScanned) return null;
+          if (!filter.scanned && isScanned) return null;
           return (
-            <div className="bg-card p-3 rounded-md flex items-center justify-between gap-2">
+            <div
+              className="bg-card p-3 rounded-md flex items-center justify-between gap-2"
+              key={link.url}
+            >
               <div>
                 <div className="flex items-center gap-2">
                   {scannedData?.status === "completed" ? (

@@ -35,7 +35,7 @@ const AllDocumentationList = () => {
     return (
       <div className="grid grid-cols-3 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton className="min-h-[10rem]" />
+          <Skeleton className="min-h-[10rem]" key={i} />
         ))}
       </div>
     );
@@ -104,7 +104,7 @@ const AllDocumentationList = () => {
                       Total all pages : {doc.totalPage}
                     </TooltipContent>
                   </Tooltip>
-                  {doc.type === "web" && doc.draft ? (
+                  {doc.type === "web" && doc.draft && doc.activePage === 0 ? (
                     <Badge variant="outline">Draft</Badge>
                   ) : (
                     <>

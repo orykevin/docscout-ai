@@ -34,7 +34,7 @@ const ThreadListSidebar = () => {
     return (
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton className="min-h-10"></Skeleton>
+          <Skeleton className="min-h-10" key={i}></Skeleton>
         ))}
       </div>
     );
@@ -45,7 +45,7 @@ const ThreadListSidebar = () => {
       <SidebarMenu>
         {threadList.map((thread) => {
           return (
-            <SidebarMenuItem>
+            <SidebarMenuItem key={thread._id}>
               <SidebarMenuButton
                 asChild
                 className="group/menu-button font-medium gap-3 h-9 rounded-md data-[active=true]:hover:opacity-95 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-[0_1px_2px_0_rgb(0_0_0/.05),inset_0_1px_0_0_rgb(255_255_255/.12)] [&>svg]:size-auto"
